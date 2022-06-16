@@ -11,6 +11,7 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 // separate fn for emergency update? transfer all tokens in emergency update or acc to user input?
 // force update reward details when updating reward address, if we force update then old reward would be lost because no withdraw fn
 // emergency pause?
+// change compiler to latest
 
 error ZeroAmount();
 error AmountLessThanStakedAmountOrZero();
