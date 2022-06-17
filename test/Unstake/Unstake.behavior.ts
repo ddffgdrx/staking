@@ -10,7 +10,7 @@ import { Pilot } from "../../typechain";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
-export async function shouldBehaveLikeStaking(): Promise<void> {
+export async function shouldBehaveLikeUnstake(): Promise<void> {
   let staking: UnipilotStaking;
   let pilot: TestERC20;
   let WETH: TestERC20;
@@ -56,10 +56,10 @@ export async function shouldBehaveLikeStaking(): Promise<void> {
     await pilot.connect(user0).approve(staking.address, MaxUint256);
     await WETH.connect(user0).approve(staking.address, MaxUint256);
   });
-  describe("#configTest", () => {
+  describe("#Unstake", () => {
     it("should return 0", async () => {
       const result = await staking.totalPilotStaked();
       expect(result).to.equal("0");
     });
   });
-};
+}
