@@ -13,8 +13,8 @@ const mineNBlocks = async (n: number) => {
   for (let i = 0; i < n; i++) {
     await ethers.provider.send("evm_mine", []);
   }
-  const blockNumBefore = await ethers.provider.getBlockNumber();
-  console.log("blockNumBefore: ", blockNumBefore);
+  const currentBlockNumber = await ethers.provider.getBlockNumber();
+  // console.log("currentBlockNumber: ", currentBlockNumber);
 };
 
 export async function shouldBehaveLikeStake(): Promise<void> {
@@ -77,55 +77,63 @@ export async function shouldBehaveLikeStake(): Promise<void> {
         "ZeroAmount"
       );
     });
-    it("should deposit 100 rewards for 3 blocks", async () => {
+    it("should deposit 100 rewards for 3000 blocks", async () => {
       let HundredWETH = parseUnits("100", "18");
       //transfer 100 weth from wallet to staking contract
       await WETH.transfer(staking.address, HundredWETH);
-      await staking.updateRewards(HundredWETH, "3");
+      await staking.updateRewards(HundredWETH, "3000");
+      console.log("b#: ",await ethers.provider.getBlockNumber());
 
       //get rewardPerBlock
       expect(await staking.currentRewardPerBlock()).to.equal(
-        HundredWETH.div(3)
+        HundredWETH.div(3000)
       );
-      // NOTICE: this is getting when updateReward and stake both mine in the same block
 
       //stake 50 pilot from alice
       await staking.connect(alice).stake(HundredWETH);
       await mineNBlocks(10);
       
+      console.log("b#: ",await ethers.provider.getBlockNumber());
       let claimed = await staking.connect(alice).claim();
-      expect(claimed).to.emit(staking, "Claim");//0.33333 ((1 - 0) * 33.3333 / 100)
+      /**
+       * hundred=100000000000000000000
+       * one=1000000000000000000
+       * reward/block = hundred/3000 = 33333333333333333 
+       * acc = ((11 * (hundred/3000)) * one) / hundred = 3666666666666666
+       * pending = ((3666666666666666 * hundred) / one)- 0 = 366666666666666600
+       */
+      expect(claimed).to.emit(staking, "Claim").withArgs(alice.address, "366666666666666600");
 
-      // await mineNBlocks(1);
-      // await staking.connect(alice).claim(); //0.33333
-      // await mineNBlocks(1);
-      // await staking.connect(alice).claim(); //0.33333
+      await mineNBlocks(1);
+      await staking.connect(alice).claim(); //0.033333
+      await mineNBlocks(1);
+      await staking.connect(alice).claim(); //0.033333
     });
-    // it("should stake more and watch the accumulate reward so far", async () => {
-    //   let HundredWETH = parseUnits("100", "18");
-    //   // 33.333 reward per block
-    //   await WETH.connect(wallet).transfer(staking.address, HundredWETH);
-    //   await staking.connect(wallet).updateRewards(HundredWETH, "3000");
-    //   await mineNBlocks(20);
+    xit("should stake more and watch the accumulate reward so far", async () => {
+      let HundredWETH = parseUnits("100", "18");
+      // 33.333 reward per block
+      await WETH.connect(wallet).transfer(staking.address, HundredWETH);
+      await staking.connect(wallet).updateRewards(HundredWETH, "3000");
+      await mineNBlocks(20);
 
-    //   await staking.connect(alice).stake(HundredWETH);
-    //   await mineNBlocks(20);
-    //   await staking.connect(alice).stake(HundredWETH);
-    //   await mineNBlocks(10);
-    //   //view calculatePendingRewards
-    //   let alicePendingReward = await staking.calculatePendingRewards(
-    //     alice.address
-    //   );
-    //   console.log("alicePendingReward:", alicePendingReward);//0.6n66
-    // });
-    // it('should not stake after rewardDistribution end', async () => {
-    //   let HundredWETH = parseUnits("100", "18");
-    //   // 33.333 reward per block
-    //   await WETH.connect(wallet).transfer(staking.address, HundredWETH);
-    //   await staking.connect(wallet).updateRewards(HundredWETH, "3");
-    //   await mineNBlocks(20);
-    //   // await staking.connect(alice).stake(HundredWETH).to.be.revertedWith;
+      await staking.connect(alice).stake(HundredWETH);
+      await mineNBlocks(20);
+      await staking.connect(alice).stake(HundredWETH);
+      await mineNBlocks(10);
+      //view calculatePendingRewards
+      let alicePendingReward = await staking.calculatePendingRewards(
+        alice.address
+      );
+      console.log("alicePendingReward:", alicePendingReward);//0.6n66
+    });
+    xit('should not stake after rewardDistribution end', async () => {
+      let HundredWETH = parseUnits("100", "18");
+      // 33.333 reward per block
+      await WETH.connect(wallet).transfer(staking.address, HundredWETH);
+      await staking.connect(wallet).updateRewards(HundredWETH, "3");
+      await mineNBlocks(20);
+      // await staking.connect(alice).stake(HundredWETH).to.be.revertedWith;
 
-    // })
+    })
   });
 }
