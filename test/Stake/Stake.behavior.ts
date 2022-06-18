@@ -94,7 +94,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       await mineNBlocks(10);
       
       let claimed = await staking.connect(alice).claim();
-      // expect(claimed).to.emit(UnipilotStaking, "Claim");//0.33333 ((1 - 0) * 33.3333 / 100)
+      expect(claimed).to.emit(staking, "Claim");//0.33333 ((1 - 0) * 33.3333 / 100)
 
       // await mineNBlocks(1);
       // await staking.connect(alice).claim(); //0.33333
