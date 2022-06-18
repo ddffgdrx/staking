@@ -26,12 +26,12 @@ const chainIds = {
 };
 
 // Ensure that we have all the environment variables we need.
-const mnemonic = process.env.MNEMONIC;
+const mnemonic: string | undefined = process.env.MNEMONIC;
 if (!mnemonic) {
   throw new Error("Please set your MNEMONIC in a .env file");
 }
 
-const infuraApiKey = process.env.INFURA_API_KEY;
+const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
 if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
 }
@@ -73,12 +73,12 @@ const config: HardhatUserConfig = {
       chainId: chainIds.hardhat,
     },
 
-    goerli: createTestnetConfig("goerli"),
-    kovan: createTestnetConfig("kovan"),
-    rinkeby: createTestnetConfig("rinkeby"),
-    ropsten: createTestnetConfig("ropsten"),
-    mainnet: createTestnetConfig("mainnet"),
-    mumbai: createTestnetConfig("mumbai"),
+    // goerli: createTestnetConfig("goerli"),
+    // kovan: createTestnetConfig("kovan"),
+    // rinkeby: createTestnetConfig("rinkeby"),
+    // ropsten: createTestnetConfig("ropsten"),
+    // mainnet: createTestnetConfig("mainnet"),
+    // mumbai: createTestnetConfig("mumbai"),
   },
   mocha: {
     timeout: 50000,

@@ -21,13 +21,12 @@ async function tokensFixture(): Promise<TokensFixture> {
 interface StakingFixture {
   staking: UnipilotStaking;
 }
-async function stakingFixture(wallet: Wallet): Promise<StakingFixture> {
-  const { pilot, WETH } = await tokensFixture();
+async function stakingFixture(wallet: Wallet, pilot:TestERC20, WETH:TestERC20): Promise<StakingFixture> {
+  // const { pilot, WETH } = await tokensFixture();
   const stakingStaking = await ethers.getContractFactory("UnipilotStaking");
-  console.log("pilot: ", pilot.address);
-  console.log("WETH:", WETH.address);
-  console.log("governance:", wallet.address);
   const staking = (await stakingStaking.deploy(pilot.address, WETH.address, wallet.address)) as UnipilotStaking;
+  let arr:string[] = ["pilot:", "WETH:", "Governance:", "staking:"];
+  [pilot, WETH, wallet, staking].map((el, i) => console.log(arr[i],el.address))
   return { staking };
 }
 
@@ -36,7 +35,7 @@ type TokensAndStakingFixture = StakingFixture & TokensFixture;
 export const stakingConfigFixture: Fixture<TokensAndStakingFixture> =
   async function (): Promise<TokensAndStakingFixture> {
     const [wallet, alice, bob, carol, other, user0, user1, user2, user3, user4] = waffle.provider.getWallets();
-    const { staking } = await stakingFixture(wallet);
     const { pilot, WETH } = await tokensFixture();
+    const { staking } = await stakingFixture(wallet, pilot, WETH);
     return { staking, pilot, WETH };
   };
