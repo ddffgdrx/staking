@@ -35,6 +35,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     staking = res.staking;
     pilot = res.pilot;
     WETH = res.WETH;
+
     await pilot.connect(wallet).mint(wallet.address, parseUnits("2000000", "18"));
     await WETH.connect(wallet).mint(wallet.address, parseUnits("2000000", "18"));
 
