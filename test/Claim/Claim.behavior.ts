@@ -5,8 +5,7 @@ import { stakingConfigFixture } from "../shared/fixtures";
 import { MaxUint256 } from "@ethersproject/constants";
 import { ethers, waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
-import { TestERC20 } from "../../typechain/TestERC20.d";
-import { Pilot } from "../../typechain";
+import { TestERC20 } from "../../typechain/TestERC20";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -16,14 +15,14 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
   let WETH: TestERC20;
 
   type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
-  const [wallet, alice, bob, carol, other, user0, user1, user2, user3, user4] =
-    waffle.provider.getWallets();
+  const [wallet, alice, bob, carol, other, user0, user1, user2, user3, user4] = waffle.provider.getWallets();
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
   before("fixtures deployer", async () => {
     loadFixture = createFixtureLoader([wallet, other]);
   });
+
   beforeEach("fixtures", async () => {
     const res = await loadFixture(stakingConfigFixture);
     staking = res.staking;
@@ -56,6 +55,7 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
     await pilot.connect(user0).approve(staking.address, MaxUint256);
     await WETH.connect(user0).approve(staking.address, MaxUint256);
   });
+
   describe("#Claim", () => {
     it("should return 0", async () => {
       const result = await staking.totalPilotStaked();
