@@ -3,20 +3,12 @@ import { BigNumber, Contract, Wallet } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { stakingConfigFixture } from "../shared/fixtures";
 import { MaxUint256 } from "@ethersproject/constants";
-import { ethers, waffle } from "hardhat";
+import { waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 import { TestERC20 } from "../../typechain/TestERC20";
+import { mineNBlocks } from '../common.setup';
 
 const createFixtureLoader = waffle.createFixtureLoader;
-
-const mineNBlocks = async (n: number): Promise<number> => {
-  for (let i = 0; i < n; i++) {
-    await ethers.provider.send("evm_mine", []);
-  }
-  const currentBlockNumber = await ethers.provider.getBlockNumber();
-  return currentBlockNumber
-  // console.log("currentBlockNumber: ", currentBlockNumber);
-};
 
 export async function shouldBehaveLikeStake(): Promise<void> {
   let staking: UnipilotStaking;
@@ -78,7 +70,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
         "ZeroAmount"
       );
     });
-    it("should deposit 100 rewards for 3000 blocks", async () => {
+    it("should deposit 100 rewards for 3000 blocks and stake and claim periodically", async () => {
       let HundredWETH = parseUnits("100", "18");
       //transfer 100 weth from wallet to staking contract
       await WETH.transfer(staking.address, HundredWETH);
@@ -111,23 +103,28 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       let claim3 = await staking.connect(alice).claim();
       expect(claim3).to.emit(staking, "Claim").withArgs(alice.address, "66666666666666600"); //b# (41-39)
     });
+    // NOTICE: this has to fix on contract level to only view reward.
     xit("should stake more and watch the accumulate reward so far", async () => {
       let HundredWETH = parseUnits("100", "18");
+      let ONE  = parseUnits("1", "18");
       // 33.333 reward per block
-      await WETH.connect(wallet).transfer(staking.address, HundredWETH);
-      await staking.connect(wallet).updateRewards(HundredWETH, "3000");
+      await WETH.transfer(staking.address, HundredWETH);
+      await staking.updateRewards(HundredWETH, "3000");
       await mineNBlocks(20);
-
-      await staking.connect(alice).stake(HundredWETH);
+      console.log('1st stake');
+      await staking.connect(alice).stake(ONE);
       await mineNBlocks(20);
-      await staking.connect(alice).stake(HundredWETH);
+      console.log('2nd stake');
+      await staking.connect(alice).stake(ONE);
       await mineNBlocks(10);
       //view calculatePendingRewards
+      console.log('rew lookup');
       let alicePendingReward = await staking.calculatePendingRewards(
         alice.address
       );
       console.log("alicePendingReward:", alicePendingReward);//0.6n66
     });
+    // NOTICE: not supported yet
     xit('should not stake after rewardDistribution end', async () => {
       let HundredWETH = parseUnits("100", "18");
       // 33.333 reward per block

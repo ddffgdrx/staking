@@ -6,6 +6,7 @@ import { MaxUint256 } from "@ethersproject/constants";
 import { ethers, waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 import { TestERC20 } from "../../typechain/TestERC20";
+import { mineNBlocks } from '../common.setup';
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -22,7 +23,6 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
   before("fixtures deployer", async () => {
     loadFixture = createFixtureLoader([wallet, other]);
   });
-
   beforeEach("fixtures", async () => {
     const res = await loadFixture(stakingConfigFixture);
     staking = res.staking;
@@ -61,5 +61,44 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       const result = await staking.totalPilotStaked();
       expect(result).to.equal("0");
     });
+    it("should periodically stake twice and claim", async () => {
+      let HundredWETH = parseUnits("100", "18");
+      // 33.333 reward per block
+      await WETH.connect(wallet).transfer(staking.address, HundredWETH);
+      await staking.connect(wallet).updateRewards(HundredWETH, "3000");
+      await mineNBlocks(20);
+
+      await staking.connect(alice).stake(HundredWETH);
+      await mineNBlocks(20);
+      await staking.connect(alice).stake(HundredWETH);
+      await mineNBlocks(10);    
+      await staking.connect(alice).claim(); //0.33333
+
+    });
+    it('should revert on claim for contract out ot funds', async () => {
+      let HundredWETH = parseUnits("100", "18");
+      await WETH.connect(wallet).transfer(staking.address, HundredWETH);
+      await staking.connect(wallet).updateRewards(HundredWETH, "3");
+      await staking.connect(alice).stake(HundredWETH)
+      
+      await mineNBlocks(20);
+      expect(await staking.connect(alice).claim()).to.be.revertedWith('InsufficientFunds');
+    })
+    it('should work with multiple user deposit and calculate same reward for all', async () => {
+      let HundredWETH = parseUnits("100", "18");
+      await WETH.transfer(staking.address, HundredWETH);
+      await staking.updateRewards(HundredWETH, "3000");
+
+      await staking.connect(alice).stake(HundredWETH)
+      await staking.connect(bob).stake(HundredWETH)
+      await staking.connect(carol).stake(HundredWETH)
+
+      await mineNBlocks(20);
+      let alicePendingReward = await staking.calculatePendingRewards(alice.address);
+      let bobPendingReward = await staking.calculatePendingRewards(bob.address);
+      let carolPendingReward = await staking.calculatePendingRewards(carol.address);
+      expect(alicePendingReward).to.equal(bobPendingReward).to.equal(carolPendingReward)
+
+    })
   });
 }
