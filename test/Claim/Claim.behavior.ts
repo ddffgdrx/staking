@@ -6,7 +6,7 @@ import { MaxUint256 } from "@ethersproject/constants";
 import { ethers, waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 import { TestERC20 } from "../../typechain/TestERC20";
-import { mineNBlocks } from '../common.setup';
+import { expectStake, mineNBlocks, expectClaim } from '../common.setup';
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -77,15 +77,15 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       await mineNBlocks(20);
 
       let stake1 = await staking.connect(alice).stake(TEN);
-      expect(stake1).to.emit(staking, "Stake").withArgs(alice.address, "10000000000000000000", "0");
+      expectStake(staking, stake1, alice, TEN, "0");
       await mineNBlocks(20);
       
       let stake2 = await staking.connect(alice).stake(TEN);
-      expect(stake2).to.emit(staking, "Stake").withArgs(alice.address, "10000000000000000000", "699999999999999990");
+      expectStake(staking, stake2, alice, TEN, "699999999999999990");
       await mineNBlocks(10);    
 
       let claimed = await staking.connect(alice).claim();
-      expect(claimed).to.emit(staking, "Claim").withArgs(alice.address, "366666666666666660");
+      expectClaim(staking, claimed, alice, "366666666666666660");
 
     });
     xit('should revert on claim for contract out ot funds', async () => {
