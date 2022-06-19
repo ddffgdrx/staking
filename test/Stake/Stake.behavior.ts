@@ -9,11 +9,12 @@ import { TestERC20 } from "../../typechain/TestERC20";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
-const mineNBlocks = async (n: number) => {
+const mineNBlocks = async (n: number): Promise<number> => {
   for (let i = 0; i < n; i++) {
     await ethers.provider.send("evm_mine", []);
   }
   const currentBlockNumber = await ethers.provider.getBlockNumber();
+  return currentBlockNumber
   // console.log("currentBlockNumber: ", currentBlockNumber);
 };
 
@@ -82,7 +83,6 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       //transfer 100 weth from wallet to staking contract
       await WETH.transfer(staking.address, HundredWETH);
       await staking.updateRewards(HundredWETH, "3000");
-      console.log("b#: ",await ethers.provider.getBlockNumber());
 
       //get rewardPerBlock
       expect(await staking.currentRewardPerBlock()).to.equal(
@@ -93,7 +93,6 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       await staking.connect(alice).stake(HundredWETH);
       await mineNBlocks(10);
       
-      console.log("b#: ",await ethers.provider.getBlockNumber());
       let claimed = await staking.connect(alice).claim();
       /**
        * hundred=100000000000000000000
@@ -103,11 +102,14 @@ export async function shouldBehaveLikeStake(): Promise<void> {
        * pending = ((3666666666666666 * hundred) / one)- 0 = 366666666666666600
        */
       expect(claimed).to.emit(staking, "Claim").withArgs(alice.address, "366666666666666600");
-
+      
       await mineNBlocks(1);
-      await staking.connect(alice).claim(); //0.033333
+      let claim2 = await staking.connect(alice).claim();
+      expect(claim2).to.emit(staking, "Claim").withArgs(alice.address, "66666666666666600"); //b# (39-37)
+      
       await mineNBlocks(1);
-      await staking.connect(alice).claim(); //0.033333
+      let claim3 = await staking.connect(alice).claim();
+      expect(claim3).to.emit(staking, "Claim").withArgs(alice.address, "66666666666666600"); //b# (41-39)
     });
     xit("should stake more and watch the accumulate reward so far", async () => {
       let HundredWETH = parseUnits("100", "18");
