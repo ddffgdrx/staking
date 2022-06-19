@@ -98,7 +98,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
        * hundred=100000000000000000000
        * one=1000000000000000000
        * reward/block = hundred/3000 = 33333333333333333 
-       * acc = ((11 * (hundred/3000)) * one) / hundred = 3666666666666666
+       * acc += ((11 * (hundred/3000)) * one) / hundred = 3666666666666666
        * pending = ((3666666666666666 * hundred) / one)- 0 = 366666666666666600
        */
       expect(claimed).to.emit(staking, "Claim").withArgs(alice.address, "366666666666666600");

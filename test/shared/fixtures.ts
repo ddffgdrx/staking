@@ -24,8 +24,10 @@ interface StakingFixture {
 async function stakingFixture(wallet: Wallet, pilot:TestERC20, WETH:TestERC20): Promise<StakingFixture> {
   const stakingStaking = await ethers.getContractFactory("UnipilotStaking");
   const staking = (await stakingStaking.deploy(pilot.address, WETH.address, wallet.address)) as UnipilotStaking;
+  
   let arr:string[] = ["pilot:", "WETH:", "Governance:", "staking:"];
   [pilot, WETH, wallet, staking].map((el, i) => console.log(arr[i],el.address))
+  
   return { staking };
 }
 
