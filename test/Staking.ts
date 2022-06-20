@@ -8,7 +8,7 @@ import { shouldBehaveLikeClaim } from "./Claim/Claim.behavior";
 use(solidity);
 
 describe("Invokes Stake", async () => {
-    // await shouldBehaveLikeStake()
+    await shouldBehaveLikeStake()
 });
 
 describe("Invokes Claim", async () => {
@@ -16,7 +16,7 @@ describe("Invokes Claim", async () => {
 })
 
 describe("Invokes Unstake", async () => {
-    // await shouldBehaveLikeUnstake()
+    await shouldBehaveLikeUnstake()
 })
 
 describe("Invokes UpdateReward", async () => {

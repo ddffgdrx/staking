@@ -1,5 +1,4 @@
 import { expect } from "chai";
-import { BigNumber, Contract, Wallet } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import { stakingConfigFixture } from "../shared/fixtures";
 import { MaxUint256 } from "@ethersproject/constants";
@@ -15,13 +14,12 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
   let pilot: TestERC20;
   let WETH: TestERC20;
 
-  type ThenArg<T> = T extends PromiseLike<infer U> ? U : T;
-  const [wallet, alice, bob, carol, other, user0, ...restUsers] = waffle.provider.getWallets();
+  const [wallet, alice, bob, carol] = waffle.provider.getWallets();
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
   before("fixtures deployer", async () => {
-    loadFixture = createFixtureLoader([wallet, other]);
+    loadFixture = createFixtureLoader([wallet]);
   });
   beforeEach("fixtures", async () => {
     const res = await loadFixture(stakingConfigFixture);
@@ -45,9 +43,6 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
     await pilot.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
     await WETH.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
 
-    await pilot.connect(user0).mint(user0.address, parseUnits("2000000", "18"));
-    await WETH.connect(user0).mint(user0.address, parseUnits("2000000", "18"));
-
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
     await WETH.connect(wallet).approve(staking.address, MaxUint256);
 
@@ -59,9 +54,6 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
 
     await pilot.connect(carol).approve(staking.address, MaxUint256);
     await WETH.connect(carol).approve(staking.address, MaxUint256);
-
-    await pilot.connect(user0).approve(staking.address, MaxUint256);
-    await WETH.connect(user0).approve(staking.address, MaxUint256);
     
 
   });
@@ -128,7 +120,6 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       let HundredWETH = parseUnits("100", "18");
       await staking.connect(alice).stake(HundredWETH)
       await mineNBlocks(20);
-      console.log('claim start');
       await ethers.provider.send("evm_setAutomine", [false]);
       let aliceClaim1 =  await staking.connect(alice).claim();  
       let aliceClaim2 =  await staking.connect(alice).claim();  
