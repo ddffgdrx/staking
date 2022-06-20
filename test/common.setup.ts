@@ -7,10 +7,11 @@ import { loadFixture } from "ethereum-waffle";
 import { stakingConfigFixture } from "./shared/fixtures";
 
 export const mineNBlocks = async (n: number): Promise<number> => {
+  let tempPromises:any = []
   for (let i = 0; i < n; i++) {
-    await ethers.provider.send("evm_mine", []);
+    tempPromises.push( ethers.provider.send("evm_mine", []));
   }
-  if (ethers) console.log(true);
+  await Promise.all(tempPromises);
   const currentBlockNumber = await ethers.provider.getBlockNumber();
   return currentBlockNumber;
   // console.log("currentBlockNumber: ", currentBlockNumber);
@@ -45,5 +46,5 @@ export const expectUnstake = (
   isEmergency?: boolean
 ) =>
   expect(variable)
-    .to.emit(staking, "Claim")
+    .to.emit(staking, "Unstake")
     .withArgs(user.address, amount, pendingRewards, isEmergency);

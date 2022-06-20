@@ -71,7 +71,6 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       const result = await staking.totalPilotStaked();
       expect(result).to.equal("0");
     });
-    // NOTICE: claim event is not emitting (query submitted)
     it("should periodically stake twice and claim", async () => {
       let TEN = parseUnits("10", "18");
       await mineNBlocks(20);
@@ -88,14 +87,17 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       expectClaim(staking, claimed, alice, "366666666666666660");
 
     });
-    xit('should revert on claim for contract out ot funds', async () => {
+    //NOTICE: this case is only possible if the updateReward and last stake/unstake/claim are in the same block
+    //        because these four functions update the lastUpdateBlock
+    it('should revert on claim for contract out ot funds', async () => {
       let HundredWETH = parseUnits("100", "18");
-      await WETH.connect(wallet).transfer(staking.address, HundredWETH);
-      await staking.connect(wallet).updateRewards(HundredWETH, "3");
-      await staking.connect(alice).stake(HundredWETH)
+
+      await staking.updateRewards(HundredWETH, "3");
+      let stake1 = await staking.connect(alice).stake(HundredWETH)
+      expectStake(staking, stake1, alice, HundredWETH, "0");
       
-      await mineNBlocks(20);
-      expect(await staking.connect(alice).claim()).to.be.revertedWith('InsufficientFunds');
+      await mineNBlocks(3300);
+      await expect(staking.connect(alice).claim()).to.be.revertedWith('InsufficientFunds');
     })
     xit('should work with multiple user deposit and calculate same reward for all', async () => {
       let HundredWETH = parseUnits("100", "18");
