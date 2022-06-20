@@ -5,7 +5,7 @@ import { MaxUint256 } from "@ethersproject/constants";
 import { ethers, waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 import { TestERC20 } from "../../typechain/TestERC20.d";
-import {} from "./../common.setup"
+import {mineNBlocks, expectUnstake} from "./../common.setup"
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -59,9 +59,20 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
 
   });
   describe("#Unstake", () => {
-    it("should return 0", async () => {
-      const result = await staking.totalPilotStaked();
-      expect(result).to.equal("0");
+    it("user can't unstake 0 OR greater than staked", async () => {
+      await expect(staking.connect(alice).unstake(0, false)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
+      await staking.connect(alice).stake(parseUnits("10", "18"));
+
+      await expect(staking.connect(alice).unstake(0, false)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
+      await expect(staking.connect(alice).unstake(parseUnits("11", "18"), false)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
+      await expect(staking.connect(alice).unstake(parseUnits("9", "18"), false)).to.not.reverted;
     });
+    it('user can emergency unstake after reward duration has ended', async () => {
+      await staking.connect(alice).stake(parseUnits("10", "18"));
+      await mineNBlocks(3000);
+      let emUnstake = await staking.connect(alice).unstake(parseUnits("10", "18"), true);
+      expectUnstake(staking, emUnstake, alice, parseUnits("10", "18"),0, true);
+      // await expect(staking.connect(alice).unstake(parseUnits("10", "18"), true)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
+    })
   });
 }
