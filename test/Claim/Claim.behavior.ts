@@ -124,5 +124,17 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       expectClaim(staking, bobPendingReward, bob, "222222222222222200");
       expectClaim(staking, carolPendingReward, carol, "222222222222222200");
     })
+    it('alice can not double claim', async () => {
+      let HundredWETH = parseUnits("100", "18");
+      await staking.connect(alice).stake(HundredWETH)
+      await mineNBlocks(20);
+      console.log('claim start');
+      await ethers.provider.send("evm_setAutomine", [false]);
+      let aliceClaim1 =  await staking.connect(alice).claim();  
+      let aliceClaim2 =  await staking.connect(alice).claim();  
+      await ethers.provider.send("evm_setAutomine", [true]);
+      expectClaim(staking, aliceClaim1, alice, "699999999999999900");
+      expectClaim(staking, aliceClaim2, alice, "0");
+    })
   });
 }
