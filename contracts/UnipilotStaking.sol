@@ -473,7 +473,7 @@ contract UnipilotStaking {
      */
     function _updateRewardPerPilotAndLastBlock() private {
         if (totalPilotStaked == 0) {
-            lastUpdateBlock = _lastRewardBlock();
+            lastUpdateBlock = block.number;
             return;
         }
 
