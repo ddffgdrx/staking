@@ -65,7 +65,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     });
     it("should revert on 0 amount stake", async () => {
       await expect(staking.connect(wallet).stake(0)).to.be.revertedWith(
-        "ZeroAmount"
+        "ZeroInput"
       );
     });
     it("should deposit 100 rewards for 3000 blocks and stake and claim periodically", async () => {
@@ -88,18 +88,21 @@ export async function shouldBehaveLikeStake(): Promise<void> {
        * acc += ((11 * (hundred/3000)) * one) / hundred = 3666666666666666
        * pending = ((3666666666666666 * hundred) / one)- 0 = 366666666666666600
        */
-      expectClaim(staking, claimed, alice, "366666666666666600");
+      expectEventForAll(staking, claimed, alice, HundredWETH, "366666666666666600", TX_TYPE.CLAIM)
+      // expectClaim(staking, claimed, alice, "366666666666666600");
       
       await mineNBlocks(1);
       let claim2 = await staking.connect(alice).claim();
-      expectClaim(staking, claim2, alice, "66666666666666600");
+      expectEventForAll(staking, claim2, alice, HundredWETH, "66666666666666600", TX_TYPE.CLAIM)
+      // expectClaim(staking, claim2, alice, "66666666666666600");
       
       await mineNBlocks(1);
       let claim3 = await staking.connect(alice).claim();
-      expectClaim(staking, claim3, alice, "66666666666666600");
+      expectEventForAll(staking, claim3, alice, HundredWETH, "66666666666666600", TX_TYPE.CLAIM)
+      // expectClaim(staking, claim3, alice, "66666666666666600");
     });
     // NOTICE: this has to fix on contract level to only view reward.
-    xit("should stake more and watch the accumulate reward so far", async () => {
+    xit("should stake more and more watch the accumulate reward so far", async () => {
       let HundredWETH = parseUnits("100", "18");
       let ONE  = parseUnits("1", "18");
 
@@ -114,15 +117,15 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       let alicePendingReward = await staking.calculatePendingRewards(
         alice.address
       );
-      console.log("alicePendingReward:", alicePendingReward);//0.6n66
+      console.log("alicePendingReward:", alicePendingReward);
     });
     // NOTICE: not supported yet
-    xit('should not stake after rewardDistribution end', async () => {
+    it('should not stake after rewardDistribution end', async () => {
       let HundredWETH = parseUnits("100", "18");
-      await WETH.connect(wallet).transfer(staking.address, HundredWETH);
-      await staking.connect(wallet).updateRewards(100, "3");
-      await mineNBlocks(20);
-      // await staking.connect(alice).stake(HundredWETH).to.be.revertedWith;
+      // await WETH.connect(wallet).transfer(staking.address, HundredWETH);
+      // await staking.connect(wallet).updateRewards(100, "3");
+      await mineNBlocks(4000);
+      await expect(staking.connect(alice).stake(HundredWETH)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
 
     })
   });
