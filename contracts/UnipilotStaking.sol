@@ -11,6 +11,8 @@ error CallerNotGovernance();
 error EtherNotAccepted();
 error InputLengthMismatch();
 error InsufficientFunds();
+error NoPendingRewardsToClaim();
+error NoStakeFound();
 error RewardDistributionPeriodHasExpired();
 error RewardPerBlockIsNotSet();
 error ZeroAddress();
@@ -319,7 +321,14 @@ contract UnipilotStaking {
      * @notice Unstake all staked pilot tokens without caring about rewards, EMERGENCY ONLY
      */
     function emergencyUnstake() external {
-        _stakeOrUnstakeOrClaim(userInfo[msg.sender].amount, TX_TYPE.EMERGENCY);
+        if (userInfo[msg.sender].amount > 0) {
+            _stakeOrUnstakeOrClaim(
+                userInfo[msg.sender].amount,
+                TX_TYPE.EMERGENCY
+            );
+        } else {
+            revert NoStakeFound();
+        }
     }
 
     /**
@@ -392,7 +401,25 @@ contract UnipilotStaking {
         if (TX_TYPE.EMERGENCY != _txType) {
             // Distribute rewards if not new stake
             if (user.amount > 0) {
-                pendingRewards = _distributeRewards();
+                // Calculate pending rewards
+                pendingRewards = _calculatePendingRewards(msg.sender);
+
+                // Downscaling pending rewards before transferring to the user
+                pendingRewards = _downscale(pendingRewards);
+
+                // If there are rewards to distribute
+                if (pendingRewards > 0) {
+                    if (pendingRewards > rewardToken.balanceOf(address(this))) {
+                        revert InsufficientFunds();
+                    }
+
+                    // Transferring rewards to the user
+                    rewardToken.safeTransfer(msg.sender, pendingRewards);
+                }
+                // If there are no pending rewards and tx is of claim then revert
+                else if (TX_TYPE.CLAIM == _txType) {
+                    revert NoPendingRewardsToClaim();
+                }
             }
         }
 
@@ -457,27 +484,6 @@ contract UnipilotStaking {
 
         if (block.number != lastUpdateBlock) {
             lastUpdateBlock = _lastRewardBlock();
-        }
-    }
-
-    /**
-     * @notice Distributes pending reward (if any) to the sender
-     * @return pendingRewards oending reward of the user
-     */
-    function _distributeRewards() private returns (uint256 pendingRewards) {
-        // Calculate pending rewards
-        pendingRewards = _calculatePendingRewards(msg.sender);
-
-        // Downscaling pending rewards before transferring to the user
-        pendingRewards = _downscale(pendingRewards);
-
-        if (pendingRewards > 0) {
-            if (pendingRewards > rewardToken.balanceOf(address(this))) {
-                revert InsufficientFunds();
-            }
-
-            // Transferring rewards to the user
-            rewardToken.safeTransfer(msg.sender, pendingRewards);
         }
     }
 
