@@ -5,7 +5,7 @@ import { MaxUint256 } from "@ethersproject/constants";
 import { waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 import { TestERC20 } from "../../typechain/TestERC20";
-import { mineNBlocks, expectClaim } from '../common.setup';
+import { mineNBlocks, TX_TYPE, expectEventForAll } from '../common.setup';
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -33,7 +33,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     await WETH.connect(wallet).mint(wallet.address, parseUnits("2000000", "18"));
 
     await WETH.transfer(staking.address, HundredWETH);
-    await staking.updateRewards(HundredWETH, "3000");
+    await staking.updateRewards(100, "3000");
 
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
     await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
@@ -120,7 +120,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     xit('should not stake after rewardDistribution end', async () => {
       let HundredWETH = parseUnits("100", "18");
       await WETH.connect(wallet).transfer(staking.address, HundredWETH);
-      await staking.connect(wallet).updateRewards(HundredWETH, "3");
+      await staking.connect(wallet).updateRewards(100, "3");
       await mineNBlocks(20);
       // await staking.connect(alice).stake(HundredWETH).to.be.revertedWith;
 

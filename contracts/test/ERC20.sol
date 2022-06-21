@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.13;
+pragma solidity 0.8.15;
 
 import "./../interfaces/IERC20Minimal.sol";
 contract TestERC20 is IERC20Minimal {
+    uint256 public decimals = 18;
     mapping(address => uint256) public override balanceOf;
     mapping(address => mapping(address => uint256)) public override allowance;
-
     constructor(uint256 amountToMint) {
         mint(msg.sender, amountToMint);
     }

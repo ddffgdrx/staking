@@ -5,7 +5,7 @@ import { MaxUint256 } from "@ethersproject/constants";
 import { ethers, waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 import { TestERC20 } from "../../typechain/TestERC20";
-import { expectStake, mineNBlocks, expectClaim } from '../common.setup';
+import {  mineNBlocks, TX_TYPE, expectEventForAll } from '../common.setup';
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -30,9 +30,9 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
     
     await pilot.mint(wallet.address, parseUnits("2000000", "18"));
     await WETH.mint(wallet.address, parseUnits("2000000", "18"));
-    
-    await WETH.transfer(staking.address, parseUnits("100", "18")); // 100 WETH
-    await staking.updateRewards(parseUnits("100", "18"), "3000"); // 100 WETH
+
+    await WETH.connect(wallet).transfer(staking.address, parseUnits("100", "18")); // 100 WETH
+    await staking.connect(wallet).updateRewards(100, "3000"); // 100 WETH
     
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
     await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
@@ -68,15 +68,15 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       await mineNBlocks(20);
 
       let stake1 = await staking.connect(alice).stake(TEN);
-      expectStake(staking, stake1, alice, TEN, "0");
+      expectEventForAll(staking, stake1, alice, TEN, "0", TX_TYPE.STAKE)
       await mineNBlocks(20);
       
       let stake2 = await staking.connect(alice).stake(TEN);
-      expectStake(staking, stake2, alice, TEN, "699999999999999990");
+      expectEventForAll(staking, stake2, alice, TEN, "699999999999999990", TX_TYPE.STAKE)
       await mineNBlocks(10);    
 
       let claimed = await staking.connect(alice).claim();
-      expectClaim(staking, claimed, alice, "366666666666666660");
+      expectEventForAll(staking, claimed, alice, TEN.mul(2), "366666666666666660", TX_TYPE.CLAIM)
 
     });
     //NOTICE: this case is only possible if the updateReward and last stake/unstake/claim are in the same block
@@ -84,9 +84,10 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
     it('should revert on claim for contract out ot funds', async () => {
       let HundredWETH = parseUnits("100", "18");
 
-      await staking.updateRewards(HundredWETH, "3");
+      await WETH.connect(wallet).transfer(staking.address, 100); // 100 WETH
+      await staking.updateRewards(100, "3");
       let stake1 = await staking.connect(alice).stake(HundredWETH)
-      expectStake(staking, stake1, alice, HundredWETH, "0");
+      expectEventForAll(staking, stake1, alice, HundredWETH, "0", TX_TYPE.STAKE)
       
       await mineNBlocks(3300);
       await expect(staking.connect(alice).claim()).to.be.revertedWith('InsufficientFunds');
@@ -106,6 +107,7 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
 
       //having some issues with alice claim, not sure why, for time being, ignoring this
       let alicePendingReward = await staking.connect(alice).claim();  
+      
       let bobPendingReward = await staking.connect(bob).claim();
       let carolPendingReward = await staking.connect(carol).claim();
 
@@ -113,19 +115,21 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       await ethers.provider.send("evm_setAutomine", [true]);
 
       // expectClaim(staking, alicePendingReward, alice, "366666666666666660");
-      expectClaim(staking, bobPendingReward, bob, "222222222222222200");
-      expectClaim(staking, carolPendingReward, carol, "222222222222222200");
+      expectEventForAll(staking, bobPendingReward, bob, HundredWETH, "222222222222222200", TX_TYPE.CLAIM)
+      expectEventForAll(staking, carolPendingReward, carol, HundredWETH, "222222222222222200", TX_TYPE.CLAIM)
     })
     it('alice can not double claim', async () => {
       let HundredWETH = parseUnits("100", "18");
       await staking.connect(alice).stake(HundredWETH)
       await mineNBlocks(20);
+
       await ethers.provider.send("evm_setAutomine", [false]);
       let aliceClaim1 =  await staking.connect(alice).claim();  
-      let aliceClaim2 =  await staking.connect(alice).claim();  
+      let aliceClaim2 =  await staking.connect(alice).claim();
+
       await ethers.provider.send("evm_setAutomine", [true]);
-      expectClaim(staking, aliceClaim1, alice, "699999999999999900");
-      expectClaim(staking, aliceClaim2, alice, "0");
+      expectEventForAll(staking, aliceClaim1, alice, HundredWETH, "699999999999999900", TX_TYPE.CLAIM)
+      expectEventForAll(staking, aliceClaim2, alice, HundredWETH, "0", TX_TYPE.CLAIM)
     })
   });
 }

@@ -6,10 +6,17 @@ import { BigNumber } from "ethers";
 import { loadFixture } from "ethereum-waffle";
 import { stakingConfigFixture } from "./shared/fixtures";
 
+export enum TX_TYPE {
+  STAKE,
+  UNSTAKE,
+  CLAIM,
+  EMERGENCY,
+}
+
 export const mineNBlocks = async (n: number): Promise<number> => {
-  let tempPromises:any = []
+  let tempPromises: any = [];
   for (let i = 0; i < n; i++) {
-    tempPromises.push( ethers.provider.send("evm_mine", []));
+    tempPromises.push(ethers.provider.send("evm_mine", []));
   }
   await Promise.all(tempPromises);
   const currentBlockNumber = await ethers.provider.getBlockNumber();
@@ -48,3 +55,15 @@ export const expectUnstake = (
   expect(variable)
     .to.emit(staking, "Unstake")
     .withArgs(user.address, amount, pendingRewards, isEmergency);
+
+export const expectEventForAll = (
+  staking: UnipilotStaking,
+  variable: ContractTransaction,
+  user: Wallet,
+  amount: string | BigNumber | number,
+  pendingRewards: string | BigNumber | number,
+  txType: TX_TYPE
+) =>
+  expect(variable)
+    .to.emit(staking, "StakeOrUnstakeOrClaim")
+    .withArgs(user.address, amount, pendingRewards, txType);

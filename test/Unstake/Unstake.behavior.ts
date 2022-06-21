@@ -34,7 +34,7 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
     await WETH.mint(wallet.address, parseUnits("2000000", "18"));
 
     await WETH.transfer(staking.address, HundredWETH);
-    await staking.updateRewards(HundredWETH, "3000");
+    await staking.updateRewards(100, "3000");
 
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
     await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
@@ -60,19 +60,36 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
   });
   describe("#Unstake", () => {
     it("user can't unstake 0 OR greater than staked", async () => {
-      await expect(staking.connect(alice).unstake(0, false)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
+      await expect(staking.connect(alice).unstake(0)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
       await staking.connect(alice).stake(parseUnits("10", "18"));
 
-      await expect(staking.connect(alice).unstake(0, false)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
-      await expect(staking.connect(alice).unstake(parseUnits("11", "18"), false)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
-      await expect(staking.connect(alice).unstake(parseUnits("9", "18"), false)).to.not.reverted;
+      await expect(staking.connect(alice).unstake(0)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
+      await expect(staking.connect(alice).unstake(parseUnits("11", "18"))).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
+      await expect(staking.connect(alice).unstake(parseUnits("9", "18"))).to.not.reverted;
     });
     it('user can emergency unstake after reward duration has ended', async () => {
       await staking.connect(alice).stake(parseUnits("10", "18"));
       await mineNBlocks(3000);
-      let emUnstake = await staking.connect(alice).unstake(parseUnits("10", "18"), true);
-      expectUnstake(staking, emUnstake, alice, parseUnits("10", "18"),0, true);
-      // await expect(staking.connect(alice).unstake(parseUnits("10", "18"), true)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
+      let emUnstake = await staking.connect(alice).unstake(parseUnits("10", "18"));
+      expectUnstake(staking, emUnstake, alice, parseUnits("10", "18"),0);
+      await expect(staking.connect(alice).unstake(parseUnits("10", "18"))).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
     })
   });
+  it('single stake then 2 rewardUpdates, passed 100blocks => unstaking => monitor rewards', async () => {
+    let TEN = parseUnits("10", "18");
+    let HundredWETH = parseUnits("100", "18");
+    
+    await staking.connect(alice).stake(TEN);
+    let currentBlockNumber = await ethers.provider.getBlockNumber();
+    
+    // await mineNBlocks(30);
+    // await WETH.transfer(staking.address, HundredWETH);
+    // await staking.updateRewards(100, "1000");    
+    
+    // await mineNBlocks(30);
+    // await WETH.transfer(staking.address, HundredWETH);
+    // await staking.updateRewards(100, "1000");
+
+    // await mineNBlocks(30);
+  })
 }
