@@ -56,7 +56,9 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
     
     await WETH.transfer(staking.address, parseUnits("100", "18"));
     await staking.updateRewards(100, "3000");
-    await staking.connect(wallet).stake(1);
+    console.log('======== admin deposit start ============');
+    await staking.connect(wallet).stake(parseUnits("1", "18"));
+    console.log('======== admin deposit end =============');
   });
   describe("#Unstake", () => {
     it("user can't unstake 0 OR greater than staked", async () => {
@@ -81,23 +83,26 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
       await expect(staking.connect(alice).unstake(1000000000000)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
       await expect(staking.connect(alice).unstake(1)).to.be.revertedWith("AmountLessThanStakedAmountOrZero");
     });
-    xit('single stake then 2 rewardUpdates, passed 100blocks => unstaking => monitor rewards', async () => {
+    it('single stake then 2 rewardUpdates, passed 100blocks => unstaking => monitor rewards', async () => {
       let TEN = parseUnits("10", "18");
       let HundredWETH = parseUnits("100", "18");
-      
+      //stake
       await staking.connect(alice).stake(TEN);
-      let currentBlockNumber = await ethers.provider.getBlockNumber();
-      
-      // await mineNBlocks(30);
-      // await WETH.transfer(staking.address, HundredWETH);
-      // await staking.updateRewards(100, "1000");    
-      
-      // await mineNBlocks(30);
-      // await WETH.transfer(staking.address, HundredWETH);
-      // await staking.updateRewards(100, "1000");
-  
-      // await mineNBlocks(30);
-    })
+      //1st update
+      await mineNBlocks(30);
+      await WETH.transfer(staking.address, HundredWETH);
+      await staking.updateRewards(100, "1000");    
+
+      //2nd update
+      await mineNBlocks(30);
+      await WETH.transfer(staking.address, HundredWETH);
+      await staking.updateRewards(100, "1000");
+
+      //unstake
+      await mineNBlocks(30);
+      let unstake1 = await staking.connect(alice).unstake(TEN); //12690762256410256290
+      expectEventForAll(staking, unstake1, alice, TEN, "12690762256410256290", TX_TYPE.UNSTAKE)
+    });
   });
   
 }

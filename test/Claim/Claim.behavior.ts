@@ -140,7 +140,7 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       await staking.connect(alice).unstake(HundredWETH)
       let aliceClaim1 =  await staking.connect(alice).claim();  
       let aliceClaim2 =  await staking.connect(alice).claim();
-
+      
       await ethers.provider.send("evm_setAutomine", [true]);
       expectEventForAll(staking, aliceClaim1, alice, HundredWETH, "699999999999999900", TX_TYPE.CLAIM)
       expectEventForAll(staking, aliceClaim1, alice, HundredWETH, "0", TX_TYPE.CLAIM)
