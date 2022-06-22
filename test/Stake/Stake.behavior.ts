@@ -89,37 +89,32 @@ export async function shouldBehaveLikeStake(): Promise<void> {
        * pending = ((3666666666666666 * hundred) / one)- 0 = 366666666666666600
        */
       expectEventForAll(staking, claimed, alice, HundredWETH, "366666666666666600", TX_TYPE.CLAIM)
-      // expectClaim(staking, claimed, alice, "366666666666666600");
       
       await mineNBlocks(1);
       let claim2 = await staking.connect(alice).claim();
       expectEventForAll(staking, claim2, alice, HundredWETH, "66666666666666600", TX_TYPE.CLAIM)
-      // expectClaim(staking, claim2, alice, "66666666666666600");
       
       await mineNBlocks(1);
       let claim3 = await staking.connect(alice).claim();
       expectEventForAll(staking, claim3, alice, HundredWETH, "66666666666666600", TX_TYPE.CLAIM)
-      // expectClaim(staking, claim3, alice, "66666666666666600");
     });
     // NOTICE: this has to fix on contract level to only view reward.
-    xit("should stake more and more watch the accumulate reward so far", async () => {
+    xit("should stake more and more view the accumulate reward so far", async () => {
       let HundredWETH = parseUnits("100", "18");
       let ONE  = parseUnits("1", "18");
 
+      let stake1 = await staking.connect(alice).stake(ONE);
+      expectEventForAll(staking, stake1, alice, ONE, "0", TX_TYPE.STAKE)
       await mineNBlocks(20);
 
-      await staking.connect(alice).stake(ONE);
-      await mineNBlocks(20);
-
-      await staking.connect(alice).stake(ONE);
+      let stake2 = await staking.connect(alice).stake(ONE);
+      expectEventForAll(staking, stake2, alice, ONE, "699999999999999993", TX_TYPE.STAKE)
       await mineNBlocks(10);
-
       let alicePendingReward = await staking.calculatePendingRewards(
         alice.address
       );
-      console.log("alicePendingReward:", alicePendingReward);
+      console.log("alicePendingReward:", alicePendingReward); //1033333333333333323
     });
-    // NOTICE: not supported yet
     it('should not stake after rewardDistribution end', async () => {
       let HundredWETH = parseUnits("100", "18");
       // await WETH.connect(wallet).transfer(staking.address, HundredWETH);

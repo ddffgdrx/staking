@@ -31,8 +31,8 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
     await pilot.mint(wallet.address, parseUnits("2000000", "18"));
     await WETH.mint(wallet.address, parseUnits("2000000", "18"));
 
-    await WETH.connect(wallet).transfer(staking.address, parseUnits("100", "18")); // 100 WETH
-    await staking.connect(wallet).updateRewards(100, "3000"); // 100 WETH
+    await WETH. transfer(staking.address, parseUnits("100", "18")); // 100 WETH
+    await staking.updateRewards(100, "3000"); // 100 WETH
     
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
     await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
@@ -105,7 +105,7 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       await mineNBlocks(20);
       await ethers.provider.send("evm_setAutomine", [false]);
 
-      //having some issues with alice claim, not sure why, for time being, ignoring this
+      //having some issues with alice claim, not sure why, for the time being, ignoring this
       let alicePendingReward = await staking.connect(alice).claim();  
       
       let bobPendingReward = await staking.connect(bob).claim();
@@ -114,7 +114,6 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       await mineNBlocks(1);
       await ethers.provider.send("evm_setAutomine", [true]);
 
-      // expectClaim(staking, alicePendingReward, alice, "366666666666666660");
       expectEventForAll(staking, bobPendingReward, bob, HundredWETH, "222222222222222200", TX_TYPE.CLAIM)
       expectEventForAll(staking, carolPendingReward, carol, HundredWETH, "222222222222222200", TX_TYPE.CLAIM)
     })
@@ -130,6 +129,21 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       await ethers.provider.send("evm_setAutomine", [true]);
       expectEventForAll(staking, aliceClaim1, alice, HundredWETH, "699999999999999900", TX_TYPE.CLAIM)
       expectEventForAll(staking, aliceClaim2, alice, HundredWETH, "0", TX_TYPE.CLAIM)
+    })
+    // NOTICE: unstake and claim in the same block, which has to revert, but not reverting
+    xit('should stake, then unstake and claim in the same block, results in a revret', async () => {
+      let HundredWETH = parseUnits("100", "18");
+      await staking.connect(alice).stake(HundredWETH)
+      await mineNBlocks(20);
+
+      await ethers.provider.send("evm_setAutomine", [false]);
+      await staking.connect(alice).unstake(HundredWETH)
+      let aliceClaim1 =  await staking.connect(alice).claim();  
+      let aliceClaim2 =  await staking.connect(alice).claim();
+
+      await ethers.provider.send("evm_setAutomine", [true]);
+      expectEventForAll(staking, aliceClaim1, alice, HundredWETH, "699999999999999900", TX_TYPE.CLAIM)
+      expectEventForAll(staking, aliceClaim1, alice, HundredWETH, "0", TX_TYPE.CLAIM)
     })
   });
 }

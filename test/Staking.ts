@@ -12,11 +12,11 @@ describe("Invokes Stake", async () => {
 });
 
 describe("Invokes Claim", async () => {
-  // await shouldBehaveLikeClaim()
+  await shouldBehaveLikeClaim()
 });
 
 describe("Invokes Unstake", async () => {
-  // await shouldBehaveLikeUnstake();
+  await shouldBehaveLikeUnstake();
 });
 
 describe("Invokes UpdateReward", async () => {
