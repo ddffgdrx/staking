@@ -146,8 +146,8 @@ contract UnipilotStaking {
         if (_newGovernance == address(0)) {
             revert ZeroAddress();
         }
-        governance = _newGovernance;
         emit GovernanceChanged(governance, _newGovernance);
+        governance = _newGovernance;
     }
 
     /**
@@ -348,9 +348,21 @@ contract UnipilotStaking {
         view
         returns (uint256)
     {
-        uint256 newAccRewardPerPilot = accRewardPerPilot +
-            (((_lastRewardBlock() - lastUpdateBlock) *
-                (currentRewardPerBlock * ONE)) / totalPilotStaked);
+        uint256 newAccRewardPerPilot;
+
+        if (totalPilotStaked != 0) {
+            newAccRewardPerPilot =
+                accRewardPerPilot +
+                (((_lastRewardBlock() - lastUpdateBlock) *
+                    (currentRewardPerBlock * ONE)) / totalPilotStaked);
+            // If checking user pending rewards in the block in which reward token is updated
+            if (newAccRewardPerPilot == 0) {
+                return 0;
+            }
+        } else {
+            return 0;
+        }
+
         uint256 rewardDebt = userInfo[msg.sender].rewardDebt;
 
         // Reset debt if user is checking rewards after reward token changed
@@ -358,15 +370,15 @@ contract UnipilotStaking {
             rewardDebt = 0;
         }
 
-        // If checking user pending rewards in the block in which reward token is updated
-        if (newAccRewardPerPilot == 0) {
-            return 0;
-        } else {
-            uint256 pendingRewards = ((userInfo[_user].amount *
-                newAccRewardPerPilot) / ONE) - rewardDebt;
-            // Downscaling before returning pending rewards
-            return _downscale(pendingRewards);
+        uint256 pendingRewards = ((userInfo[_user].amount *
+            newAccRewardPerPilot) / ONE) - rewardDebt;
+
+        // Downscale if reward token has less than 18 decimals
+        if (_computeScalingFactor(rewardToken) != 1) {
+            // Downscaling pending rewards before transferring to the user
+            pendingRewards = _downscale(pendingRewards);
         }
+        return pendingRewards;
     }
 
     /**
@@ -404,8 +416,11 @@ contract UnipilotStaking {
                 // Calculate pending rewards
                 pendingRewards = _calculatePendingRewards(msg.sender);
 
-                // Downscaling pending rewards before transferring to the user
-                pendingRewards = _downscale(pendingRewards);
+                // Downscale if reward token has less than 18 decimals
+                if (_computeScalingFactor(rewardToken) != 1) {
+                    // Downscaling pending rewards before transferring to the user
+                    pendingRewards = _downscale(pendingRewards);
+                }
 
                 // If there are rewards to distribute
                 if (pendingRewards > 0) {
@@ -420,6 +435,10 @@ contract UnipilotStaking {
                 else if (TX_TYPE.CLAIM == _txType) {
                     revert NoPendingRewardsToClaim();
                 }
+            }
+            // Claiming rewards without any stake
+            else if (TX_TYPE.CLAIM == _txType) {
+                revert NoPendingRewardsToClaim();
             }
         }
 
