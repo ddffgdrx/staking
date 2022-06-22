@@ -119,6 +119,25 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
 
       
     })
+    xit("should show correct balances of contract ($PILOT & $TOKEN) after unstaking", async () => {
+      const HUNDRED = parseUnits("100", "18");
+      console.log(await staking.totalPilotStaked());
+      console.log(await staking.accRewardPerPilot());
+      console.log(await staking.currentRewardPerBlock());
+      let stak1 = await staking.connect(alice).stake(HUNDRED);
+      
+    })
+    it("user can't normal unstake if there's no reward balance in contract", async () => {
+      let aliceStake = await staking.connect(alice).stake(parseUnits("10","18"));
+      
+      let contractRewardBalance = await WETH.balanceOf(staking.address)
+      await staking.connect(wallet).migrateFunds(wallet.address, [WETH.address], [contractRewardBalance])
+      
+      await expect(staking.connect(alice).unstake(parseUnits("10","18"))).to.be.revertedWith("InsufficientFunds")
+      let emergencyUnstake = await staking.connect(alice).emergencyUnstake()
+      
+      expectEventForAll(staking, emergencyUnstake, alice, parseUnits("10","18"), "0", TX_TYPE.EMERGENCY)
+    })
   });
   
 }
