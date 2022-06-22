@@ -6,6 +6,7 @@ import { ethers, waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 import { TestERC20 } from "../../typechain/TestERC20.d";
 import {mineNBlocks, expectEventForAll, TX_TYPE} from "./../common.setup"
+import { BigNumber } from 'ethers';
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -119,14 +120,7 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
 
       
     })
-    xit("should show correct balances of contract ($PILOT & $TOKEN) after unstaking", async () => {
-      const HUNDRED = parseUnits("100", "18");
-      console.log(await staking.totalPilotStaked());
-      console.log(await staking.accRewardPerPilot());
-      console.log(await staking.currentRewardPerBlock());
-      let stak1 = await staking.connect(alice).stake(HUNDRED);
-      
-    })
+
     it("user can't normal unstake if there's no reward balance in contract", async () => {
       let aliceStake = await staking.connect(alice).stake(parseUnits("10","18"));
       
@@ -137,6 +131,25 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
       let emergencyUnstake = await staking.connect(alice).emergencyUnstake()
       
       expectEventForAll(staking, emergencyUnstake, alice, parseUnits("10","18"), "0", TX_TYPE.EMERGENCY)
+    });
+    it("should show correct balances of contract ($PILOT & $TOKEN) after unstaking", async () => {
+      const HUNDRED = parseUnits("100", "18");
+      let contractPilotBalanceBefore = await pilot.balanceOf(staking.address);
+      let contractWETHBalanceBefore = await WETH.balanceOf(staking.address);
+      console.log("staking startttt")
+      await staking.connect(alice).stake(HUNDRED);
+      
+      await mineNBlocks(100);
+      let unstakeWithClaim = await staking.connect(alice).unstake(HUNDRED)
+      expectEventForAll(staking, unstakeWithClaim, alice, HUNDRED, "6344790356394129800",TX_TYPE.UNSTAKE)
+      
+      let contractPilotBalanceAfter =  await pilot.balanceOf(staking.address)
+      let contractWETHBalanceAfter = await WETH.balanceOf(staking.address);
+      let expectedReward = BigNumber.from("6344790356394129800")
+
+      expect(contractWETHBalanceBefore).to.equal(contractWETHBalanceAfter.add(expectedReward))
+      expect(contractPilotBalanceBefore).to.equal(contractPilotBalanceAfter)
+
     })
   });
   
