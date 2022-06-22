@@ -103,6 +103,22 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
       let unstake1 = await staking.connect(alice).unstake(TEN); //12690762256410256290
       expectEventForAll(staking, unstake1, alice, TEN, "12690762256410256290", TX_TYPE.UNSTAKE)
     });
+    it("two users stake at same time, one unstake at periodEnd, 2nd way after it", async () => {
+      const TEN = parseUnits("10", "18");
+      await ethers.provider.send("evm_setAutomine", [false]);
+      await staking.connect(alice).stake(TEN)
+      await staking.connect(bob).stake(TEN)
+      
+      await ethers.provider.send("evm_setAutomine", [true]);
+      await mineNBlocks(3000);
+      let unstak1 = await staking.connect(alice).unstake(TEN);
+      await mineNBlocks(100);
+      let unstak2 = await staking.connect(bob).unstake(TEN);
+      expectEventForAll(staking, unstak1, alice, TEN, "159414626239851850040", TX_TYPE.UNSTAKE)
+      expectEventForAll(staking, unstak2, bob, TEN, "159414626239851850040", TX_TYPE.UNSTAKE)
+
+      
+    })
   });
   
 }
