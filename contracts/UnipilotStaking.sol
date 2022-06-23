@@ -32,7 +32,7 @@ contract UnipilotStaking {
     }
 
     // To determine transaction type
-    enum TX_TYPE {
+    enum TxType {
         STAKE,
         UNSTAKE,
         CLAIM,
@@ -73,7 +73,7 @@ contract UnipilotStaking {
         address indexed user,
         uint256 amount,
         uint256 pendingReward,
-        TX_TYPE txType
+        TxType txType
     );
     event NewRewardPeriod(
         uint256 numberBlocksToDistributeRewards,
@@ -298,12 +298,11 @@ contract UnipilotStaking {
             revert RewardDistributionPeriodHasExpired();
         }
 
-        // Revert if contract doesn't have a balance to pay reward of atleast one block
-        if (currentRewardPerBlock > rewardToken.balanceOf(address(this))) {
+        if (rewardToken.balanceOf(address(this)) == 0) {
             revert InsufficientFunds();
         }
 
-        _stakeOrUnstakeOrClaim(_amount, TX_TYPE.STAKE);
+        _stakeOrUnstakeOrClaim(_amount, TxType.STAKE);
     }
 
     /**
@@ -314,7 +313,7 @@ contract UnipilotStaking {
         if ((_amount > userInfo[msg.sender].amount) || _amount == 0) {
             revert AmountLessThanStakedAmountOrZero();
         }
-        _stakeOrUnstakeOrClaim(_amount, TX_TYPE.UNSTAKE);
+        _stakeOrUnstakeOrClaim(_amount, TxType.UNSTAKE);
     }
 
     /**
@@ -324,7 +323,7 @@ contract UnipilotStaking {
         if (userInfo[msg.sender].amount > 0) {
             _stakeOrUnstakeOrClaim(
                 userInfo[msg.sender].amount,
-                TX_TYPE.EMERGENCY
+                TxType.EMERGENCY
             );
         } else {
             revert NoStakeFound();
@@ -335,7 +334,7 @@ contract UnipilotStaking {
      * @notice Claim pending rewards.
      */
     function claim() external {
-        _stakeOrUnstakeOrClaim(0, TX_TYPE.CLAIM);
+        _stakeOrUnstakeOrClaim(userInfo[msg.sender].amount, TxType.CLAIM);
     }
 
     /**
@@ -393,7 +392,7 @@ contract UnipilotStaking {
      * @param _amount amount of pilot tokens to stake or unstake. 0 if claim tx.
      * @param _txType type of the transaction
      */
-    function _stakeOrUnstakeOrClaim(uint256 _amount, TX_TYPE _txType) private {
+    function _stakeOrUnstakeOrClaim(uint256 _amount, TxType _txType) private {
         // Update reward distribution accounting
         _updateRewardPerPilotAndLastBlock();
 
@@ -402,15 +401,10 @@ contract UnipilotStaking {
 
         UserInfo storage user = userInfo[msg.sender];
 
-        // If claim tx then claim for all staked tokens
-        if (_amount == 0) {
-            _amount = user.amount;
-        }
-
         uint256 pendingRewards;
 
         // Distribute rewards if not emergency unstake
-        if (TX_TYPE.EMERGENCY != _txType) {
+        if (TxType.EMERGENCY != _txType) {
             // Distribute rewards if not new stake
             if (user.amount > 0) {
                 // Calculate pending rewards
@@ -432,17 +426,17 @@ contract UnipilotStaking {
                     rewardToken.safeTransfer(msg.sender, pendingRewards);
                 }
                 // If there are no pending rewards and tx is of claim then revert
-                else if (TX_TYPE.CLAIM == _txType) {
+                else if (TxType.CLAIM == _txType) {
                     revert NoPendingRewardsToClaim();
                 }
             }
             // Claiming rewards without any stake
-            else if (TX_TYPE.CLAIM == _txType) {
+            else if (TxType.CLAIM == _txType) {
                 revert NoPendingRewardsToClaim();
             }
         }
 
-        if (TX_TYPE.STAKE == _txType) {
+        if (TxType.STAKE == _txType) {
             // Transfer Pilot tokens to this contract
             pilotToken.safeTransferFrom(msg.sender, address(this), _amount);
 
@@ -451,7 +445,7 @@ contract UnipilotStaking {
 
             // Increase total pilot staked amount
             totalPilotStaked += _amount;
-        } else if (TX_TYPE.UNSTAKE == _txType || TX_TYPE.EMERGENCY == _txType) {
+        } else if (TxType.UNSTAKE == _txType || TxType.EMERGENCY == _txType) {
             // Decrease user pilot staked amount
             user.amount -= _amount;
 
