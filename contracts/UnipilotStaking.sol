@@ -2,8 +2,8 @@
 pragma solidity 0.8.15;
 
 // Openzeppelin helper
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Definition of custom errors
 error AmountLessThanStakedAmountOrZero();
@@ -69,16 +69,31 @@ contract UnipilotStaking {
     // Info of each user that stakes Pilot tokens
     mapping(address => UserInfo) public userInfo;
 
-    event StakeOrUnstakeOrClaim(address indexed user, uint256 amount, uint256 pendingReward, TX_TYPE txType);
+    event StakeOrUnstakeOrClaim(
+        address indexed user,
+        uint256 amount,
+        uint256 pendingReward,
+        TX_TYPE txType
+    );
     event NewRewardPeriod(
         uint256 numberBlocksToDistributeRewards,
         uint256 newRewardPerBlock,
         uint256 rewardToDistribute,
         uint256 rewardExpirationBlock
     );
-    event GovernanceChanged(address indexed oldGovernance, address indexed newGovernance);
-    event RewardTokenChanged(address indexed oldRewardToken, address indexed newRewardToken);
-    event FundsMigrated(address indexed _newVersion, IERC20Metadata[] _tokens, uint256[] _amounts);
+    event GovernanceChanged(
+        address indexed oldGovernance,
+        address indexed newGovernance
+    );
+    event RewardTokenChanged(
+        address indexed oldRewardToken,
+        address indexed newRewardToken
+    );
+    event FundsMigrated(
+        address indexed _newVersion,
+        IERC20Metadata[] _tokens,
+        uint256[] _amounts
+    );
 
     /**
      * @notice Constructor
@@ -91,7 +106,11 @@ contract UnipilotStaking {
         address _rewardToken,
         address _pilotToken
     ) {
-        if (_governance == address(0) || _rewardToken == address(0) || _pilotToken == address(0)) {
+        if (
+            _governance == address(0) ||
+            _rewardToken == address(0) ||
+            _pilotToken == address(0)
+        ) {
             revert ZeroAddress();
         }
         governance = _governance;
@@ -136,7 +155,10 @@ contract UnipilotStaking {
      * @param _newRewardToken address of the new reward token
      * @dev Only callable by Governance. It also resets reward distribution accounting
      */
-    function updateRewardToken(address _newRewardToken) external onlyGovernance {
+    function updateRewardToken(address _newRewardToken)
+        external
+        onlyGovernance
+    {
         if (_newRewardToken == address(0)) {
             revert ZeroAddress();
         }
@@ -157,7 +179,10 @@ contract UnipilotStaking {
      * @param _rewardDurationInBlocks total number of blocks in which the '_reward' should be distributed
      * @dev Only callable by Governance. Enter both params in decimal format
      */
-    function updateRewards(uint256 _reward, uint256 _rewardDurationInBlocks) external onlyGovernance {
+    function updateRewards(uint256 _reward, uint256 _rewardDurationInBlocks)
+        external
+        onlyGovernance
+    {
         if (_rewardDurationInBlocks == 0) {
             revert ZeroInput();
         }
@@ -179,14 +204,20 @@ contract UnipilotStaking {
         else {
             // Upscaling '_reward' to 18 decimals before calculating 'currentRewardPerBlock'
             currentRewardPerBlock =
-                ((_reward * ONE) + ((periodEndBlock - block.number) * currentRewardPerBlock)) /
+                ((_reward * ONE) +
+                    ((periodEndBlock - block.number) * currentRewardPerBlock)) /
                 _rewardDurationInBlocks;
         }
 
         // Setting rewards expiration block
         periodEndBlock = block.number + _rewardDurationInBlocks;
 
-        emit NewRewardPeriod(_rewardDurationInBlocks, currentRewardPerBlock, _reward, periodEndBlock);
+        emit NewRewardPeriod(
+            _rewardDurationInBlocks,
+            currentRewardPerBlock,
+            _reward,
+            periodEndBlock
+        );
     }
 
     /**
@@ -194,7 +225,10 @@ contract UnipilotStaking {
      * @param _expireDurationInBlocks number of blocks after which reward distribution should be halted
      * @dev Only callable by Governance
      */
-    function updateRewardEndBlock(uint256 _expireDurationInBlocks) external onlyGovernance {
+    function updateRewardEndBlock(uint256 _expireDurationInBlocks)
+        external
+        onlyGovernance
+    {
         periodEndBlock = block.number + _expireDurationInBlocks;
     }
 
@@ -288,7 +322,10 @@ contract UnipilotStaking {
      */
     function emergencyUnstake() external {
         if (userInfo[msg.sender].amount > 0) {
-            _stakeOrUnstakeOrClaim(userInfo[msg.sender].amount, TX_TYPE.EMERGENCY);
+            _stakeOrUnstakeOrClaim(
+                userInfo[msg.sender].amount,
+                TX_TYPE.EMERGENCY
+            );
         } else {
             revert NoStakeFound();
         }
@@ -306,13 +343,18 @@ contract UnipilotStaking {
      * @param _user address of the user
      * @return pending rewards of the user
      */
-    function calculatePendingRewards(address _user) external view returns (uint256) {
+    function calculatePendingRewards(address _user)
+        external
+        view
+        returns (uint256)
+    {
         uint256 newAccRewardPerPilot;
 
         if (totalPilotStaked != 0) {
             newAccRewardPerPilot =
                 accRewardPerPilot +
-                (((_lastRewardBlock() - lastUpdateBlock) * (currentRewardPerBlock * ONE)) / totalPilotStaked);
+                (((_lastRewardBlock() - lastUpdateBlock) *
+                    (currentRewardPerBlock * ONE)) / totalPilotStaked);
             // If checking user pending rewards in the block in which reward token is updated
             if (newAccRewardPerPilot == 0) {
                 return 0;
@@ -328,7 +370,8 @@ contract UnipilotStaking {
             rewardDebt = 0;
         }
 
-        uint256 pendingRewards = ((userInfo[_user].amount * newAccRewardPerPilot) / ONE) - rewardDebt;
+        uint256 pendingRewards = ((userInfo[_user].amount *
+            newAccRewardPerPilot) / ONE) - rewardDebt;
 
         // Downscale if reward token has less than 18 decimals
         if (_computeScalingFactor(rewardToken) != 1) {
@@ -422,7 +465,12 @@ contract UnipilotStaking {
         // Adjust user debt
         user.rewardDebt = (user.amount * accRewardPerPilot) / ONE;
 
-        emit StakeOrUnstakeOrClaim(msg.sender, _amount, pendingRewards, _txType);
+        emit StakeOrUnstakeOrClaim(
+            msg.sender,
+            _amount,
+            pendingRewards,
+            _txType
+        );
     }
 
     /**
@@ -449,7 +497,8 @@ contract UnipilotStaking {
         }
 
         accRewardPerPilot +=
-            ((_lastRewardBlock() - lastUpdateBlock) * (currentRewardPerBlock * ONE)) /
+            ((_lastRewardBlock() - lastUpdateBlock) *
+                (currentRewardPerBlock * ONE)) /
             totalPilotStaked;
 
         if (block.number != lastUpdateBlock) {
@@ -461,8 +510,14 @@ contract UnipilotStaking {
      * @notice Calculate pending rewards for a user
      * @param _user address of the user
      */
-    function _calculatePendingRewards(address _user) private view returns (uint256) {
-        return ((userInfo[_user].amount * accRewardPerPilot) / ONE) - userInfo[_user].rewardDebt;
+    function _calculatePendingRewards(address _user)
+        private
+        view
+        returns (uint256)
+    {
+        return
+            ((userInfo[_user].amount * accRewardPerPilot) / ONE) -
+            userInfo[_user].rewardDebt;
     }
 
     /**
@@ -476,7 +531,11 @@ contract UnipilotStaking {
      * @notice Returns a scaling factor that, when multiplied to a token amount for `token`, normalizes its balance as if
      * it had 18 decimals.
      */
-    function _computeScalingFactor(IERC20Metadata _token) private view returns (uint256) {
+    function _computeScalingFactor(IERC20Metadata _token)
+        private
+        view
+        returns (uint256)
+    {
         // Tokens that don't implement the `decimals` method are not supported.
         uint256 tokenDecimals = _token.decimals();
 
