@@ -4,6 +4,7 @@ import { shouldBehaveLikeStake } from "./Stake/Stake.behavior";
 import { shouldBehaveLikeUnstake } from "./Unstake/Unstake.behavior";
 import { shouldBehaveLikeGovernance } from "./Governance/Governance";
 import { shouldBehaveLikeClaim } from "./Claim/Claim.behavior";
+import { shouldBehaveLikeViewRewards } from "./ViewReward/ViewReward.behavior";
 
 use(solidity);
 
@@ -20,5 +21,9 @@ describe("Invokes Unstake", async () => {
 });
 
 describe("Invokes Governance", async () => {
-  await shouldBehaveLikeGovernance();
+  // await shouldBehaveLikeGovernance();
+});
+
+describe("Invokes View Reward", async () => {
+  await shouldBehaveLikeViewRewards();
 });
