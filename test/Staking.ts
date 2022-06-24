@@ -9,7 +9,7 @@ import { shouldBehaveLikeViewRewards } from "./ViewReward/ViewReward.behavior";
 use(solidity);
 
 describe("Invokes Stake", async () => {
-  await shouldBehaveLikeStake();
+  // await shouldBehaveLikeStake();
 });
 
 describe("Invokes Claim", async () => {
@@ -21,7 +21,7 @@ describe("Invokes Unstake", async () => {
 });
 
 describe("Invokes Governance", async () => {
-  // await shouldBehaveLikeGovernance();
+  await shouldBehaveLikeGovernance();
 });
 
 describe("Invokes View Reward", async () => {
