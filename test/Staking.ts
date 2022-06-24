@@ -2,7 +2,7 @@ import { use } from "chai";
 import { solidity } from "ethereum-waffle";
 import { shouldBehaveLikeStake } from "./Stake/Stake.behavior";
 import { shouldBehaveLikeUnstake } from "./Unstake/Unstake.behavior";
-import { shouldBehaveLikeGovernance } from "./Governance/Governance";
+import { shouldBehaveLikeGovernance } from "./Governance/Governance.behavior";
 import { shouldBehaveLikeClaim } from "./Claim/Claim.behavior";
 import { shouldBehaveLikeViewRewards } from "./ViewReward/ViewReward.behavior";
 
@@ -17,7 +17,7 @@ describe("Invokes Claim", async () => {
 });
 
 describe("Invokes Unstake", async () => {
-  // await shouldBehaveLikeUnstake();
+  await shouldBehaveLikeUnstake();
 });
 
 describe("Invokes Governance", async () => {
@@ -25,5 +25,5 @@ describe("Invokes Governance", async () => {
 });
 
 describe("Invokes View Reward", async () => {
-  await shouldBehaveLikeViewRewards();
+  // await shouldBehaveLikeViewRewards();
 });
