@@ -1,10 +1,10 @@
 import "@nomiclabs/hardhat-waffle";
-// import "@nomiclabs/hardhat-etherscan";
+import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 
-import "./tasks/accounts";
+import "./tasks/deploy/staking";
 
 import { resolve } from "path";
 
@@ -40,7 +40,9 @@ let alchemyapiKey = process.env.FORK;
 
 const etherscanApiKey = process.env.ETHERSCAN_API_KEY;
 
-function createTestnetConfig(network: keyof typeof chainIds): NetworkUserConfig {
+function createTestnetConfig(
+  network: keyof typeof chainIds
+): NetworkUserConfig {
   const url: string =
     network == "mumbai"
       ? "https://speedy-nodes-nyc.moralis.io/127149d18dffd833851dc9f2/polygon/mumbai"
@@ -73,12 +75,12 @@ const config: HardhatUserConfig = {
       chainId: chainIds.hardhat,
     },
 
-    // goerli: createTestnetConfig("goerli"),
-    // kovan: createTestnetConfig("kovan"),
-    // rinkeby: createTestnetConfig("rinkeby"),
-    // ropsten: createTestnetConfig("ropsten"),
-    // mainnet: createTestnetConfig("mainnet"),
-    // mumbai: createTestnetConfig("mumbai"),
+    goerli: createTestnetConfig("goerli"),
+    kovan: createTestnetConfig("kovan"),
+    rinkeby: createTestnetConfig("rinkeby"),
+    ropsten: createTestnetConfig("ropsten"),
+    mainnet: createTestnetConfig("mainnet"),
+    mumbai: createTestnetConfig("mumbai"),
   },
   mocha: {
     timeout: 50000,
@@ -113,9 +115,9 @@ const config: HardhatUserConfig = {
     outDir: "typechain",
     target: "ethers-v5",
   },
-  // etherscan: {
-  //   apiKey: etherscanApiKey,
-  // }
+  etherscan: {
+    apiKey: etherscanApiKey,
+  },
 };
 
 export default config;
