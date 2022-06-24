@@ -199,6 +199,8 @@ contract UnipilotStaking {
                 _rewardDurationInBlocks;
         }
 
+        lastUpdateBlock = block.number;
+
         // Setting rewards expiration block
         periodEndBlock = block.number + _rewardDurationInBlocks;
 
@@ -227,12 +229,14 @@ contract UnipilotStaking {
      * @param _newVersion receiver address of the funds
      * @param _tokens list of token addresses
      * @param _amounts list of funds amount
+     * @param _isPilotMigrate whether to transfer pilot tokens
      * @dev Only callable by Governance.
      */
     function migrateFunds(
         address _newVersion,
         IERC20Metadata[] calldata _tokens,
-        uint256[] calldata _amounts
+        uint256[] calldata _amounts,
+        bool _isPilotMigrate
     ) external onlyGovernance {
         if (_newVersion == address(0)) revert ZeroAddress();
 
@@ -258,6 +262,17 @@ contract UnipilotStaking {
             unchecked {
                 ++i;
             }
+        }
+
+        // Migrate pilot tokens
+        if (_isPilotMigrate) {
+            // Pilot token balance of this contract minus staked pilot
+            uint256 protocolPilotBalance = pilotToken.balanceOf(address(this)) -
+                totalPilotStaked;
+
+            // If protocol owns any pilot in this contract then transfer
+            if (protocolPilotBalance > 0)
+                pilotToken.safeTransfer(_newVersion, protocolPilotBalance);
         }
         emit FundsMigrated(_newVersion, _tokens, _amounts);
     }
