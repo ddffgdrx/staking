@@ -17,7 +17,7 @@ describe("Invokes Claim", async () => {
 });
 
 describe("Invokes Unstake", async () => {
-  await shouldBehaveLikeUnstake();
+  // await shouldBehaveLikeUnstake();
 });
 
 describe("Invokes Governance", async () => {
@@ -25,5 +25,5 @@ describe("Invokes Governance", async () => {
 });
 
 describe("Invokes View Reward", async () => {
-  // await shouldBehaveLikeViewRewards();
+  await shouldBehaveLikeViewRewards();
 });

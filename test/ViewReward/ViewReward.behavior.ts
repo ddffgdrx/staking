@@ -80,8 +80,20 @@ export async function shouldBehaveLikeViewRewards(): Promise<void> {
 
       expectEventForAll(staking, aliceStake, alice, TEN, 0, TX_TYPE.STAKE);
       expectEventForAll(staking, aliceClaim, alice, TEN, TEN.add(ONE), TX_TYPE.CLAIM);
-      console.log("alice view reward", aliceVieww.toString());
+      // console.log("alice view reward", aliceVieww.toString());
       expect(aliceVieww).to.equal(0);
+    });
+    //NOTICE: this test is not working, it's a bug in the automine,
+    //it doesn't revert the pending transactions after confirmation
+    it("should prevent double claim", async () => {
+      let aliceStake = await staking.connect(alice).stake(TEN);
+      await ethers.provider.send("evm_setAutomine", [false]);
+      let claim1 = await staking.connect(alice).claim();
+      let claim2 = await staking.connect(alice).claim();
+      await ethers.provider.send("evm_setAutomine", [true]);
+      await mineNBlocks(1);
+      expectEventForAll(staking, claim1, alice, TEN, ONE, TX_TYPE.CLAIM);
+      // expectEventForAll(staking, claim1, alice, TEN, ONE, TX_TYPE.CLAIM)
     });
   });
 }
