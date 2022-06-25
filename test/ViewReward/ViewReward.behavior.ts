@@ -49,17 +49,19 @@ export async function shouldBehaveLikeViewRewards(): Promise<void> {
       const result = await staking.currentRewardPerBlock();
       expect(result).to.equal(HUNDRED.div("100"));
     });
+
     it("should stake 10 tokens and after 10 blocks, see rewards", async () => {
-      let aliceStake = await staking.connect(alice).stake(TEN);
+      let aliceStake = await staking.stake(alice.address, TEN);
       expectEventForAll(staking, aliceStake, alice, TEN, 0, TX_TYPE.STAKE);
       await mineNBlocks(10);
       let aliceReward = await staking.calculatePendingRewards(alice.address);
       expect(aliceReward).to.equal(TEN);
     });
+
     it("2 users stake at same time, one view for 10 blocks, 2nd view for 20 blocks, should be double", async () => {
       await ethers.provider.send("evm_setAutomine", [false]);
-      let aliceStake = await staking.connect(alice).stake(TEN); //block number = 16
-      let bobStake = await staking.connect(bob).stake(TEN); //block number = 16
+      let aliceStake = await staking.stake(alice.address, TEN); //block number = 16
+      let bobStake = await staking.stake(bob.address, TEN); //block number = 16
       await ethers.provider.send("evm_setAutomine", [true]);
 
       await mineNBlocks(10);
@@ -72,8 +74,9 @@ export async function shouldBehaveLikeViewRewards(): Promise<void> {
       expect(aliceReward).to.equal("4500000000000000000"); //4.5
       expect(bobReward).to.equal("9500000000000000000"); //9.5
     });
+
     it("should stake and claim all reward, then only view the reward for 1 block", async () => {
-      let aliceStake = await staking.connect(alice).stake(TEN);
+      let aliceStake = await staking.stake(alice.address, TEN);
       await mineNBlocks(10);
       let aliceClaim = await staking.connect(alice).claim();
       let aliceVieww = await staking.calculatePendingRewards(alice.address);
@@ -83,10 +86,11 @@ export async function shouldBehaveLikeViewRewards(): Promise<void> {
       // console.log("alice view reward", aliceVieww.toString());
       expect(aliceVieww).to.equal(0);
     });
+
     //NOTICE: this test is not working, it's a bug in the automine,
     //it doesn't revert the pending transactions after confirmation
     it("should prevent double claim", async () => {
-      let aliceStake = await staking.connect(alice).stake(TEN);
+      let aliceStake = await staking.stake(alice.address, TEN);
       await ethers.provider.send("evm_setAutomine", [false]);
       let claim1 = await staking.connect(alice).claim();
       let claim2 = await staking.connect(alice).claim();

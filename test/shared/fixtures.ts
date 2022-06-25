@@ -4,20 +4,24 @@ import { deployContract, Fixture } from "ethereum-waffle";
 import { TestERC20 } from "../../typechain/TestERC20";
 import { waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
-
+import { TestERC206D } from "../../typechain/TestERC206D.d";
 interface TokensFixture {
   pilot: TestERC20;
   WETH: TestERC20;
   testToken: TestERC20;
+  WETH6D: TestERC206D; //6 decimals token
 }
 
 async function tokensFixture(): Promise<TokensFixture> {
+  const sixDecimalToken = await ethers.getContractFactory("TestERC206D");
   const tokenFactory = await ethers.getContractFactory("TestERC20");
+
   const pilot = (await tokenFactory.deploy(BigNumber.from(1).pow(255))) as TestERC20;
   const WETH = (await tokenFactory.deploy(BigNumber.from(1).pow(255))) as TestERC20;
   const testToken = (await tokenFactory.deploy(BigNumber.from(1).pow(255))) as TestERC20;
+  const WETH6D = (await sixDecimalToken.deploy(BigNumber.from(1).pow(255))) as TestERC206D; //6 decimals token
 
-  return { pilot, WETH, testToken };
+  return { pilot, WETH, testToken, WETH6D };
 }
 
 interface StakingFixture {
@@ -37,8 +41,8 @@ type TokensAndStakingFixture = StakingFixture & TokensFixture;
 
 export const stakingConfigFixture: Fixture<TokensAndStakingFixture> =
   async function (): Promise<TokensAndStakingFixture> {
-    const [wallet, alice, bob, carol, other, user0, user1, user2, user3, user4] = waffle.provider.getWallets();
-    const { pilot, WETH, testToken } = await tokensFixture();
+    const [wallet] = waffle.provider.getWallets();
+    const { pilot, WETH, testToken, WETH6D } = await tokensFixture();
     const { staking } = await stakingFixture(wallet, WETH, pilot);
-    return { staking, pilot, WETH, testToken };
+    return { staking, pilot, WETH, testToken, WETH6D };
   };

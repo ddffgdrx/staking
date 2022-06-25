@@ -5,6 +5,7 @@ import { shouldBehaveLikeUnstake } from "./Unstake/Unstake.behavior";
 import { shouldBehaveLikeGovernance } from "./Governance/Governance.behavior";
 import { shouldBehaveLikeClaim } from "./Claim/Claim.behavior";
 import { shouldBehaveLikeViewRewards } from "./ViewReward/ViewReward.behavior";
+import { shouldBehaveLikeSixDecimalsToken } from "./SixDecimalsToken/SixDecimalsToken.behavior";
 
 use(solidity);
 
@@ -21,9 +22,13 @@ describe("Invokes Unstake", async () => {
 });
 
 describe("Invokes Governance", async () => {
-  await shouldBehaveLikeGovernance();
+  // await shouldBehaveLikeGovernance();
 });
 
 describe("Invokes View Reward", async () => {
-  // await shouldBehaveLikeViewRewards();
+  // await shouldBehaveLikeViewRewards(); //this thing is breaking,
+});
+
+describe("Invokes Six Decimals Tokens", async () => {
+  await shouldBehaveLikeSixDecimalsToken();
 });

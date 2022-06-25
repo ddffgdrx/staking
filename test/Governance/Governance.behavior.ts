@@ -39,7 +39,7 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
 
     await WETH.transfer(staking.address, HUNDRED);
     await staking.updateRewards(100, 100);
-    console.log("start b#", await ethers.provider.getBlockNumber());
+    // console.log("start b#", await ethers.provider.getBlockNumber());
 
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
     await WETH.connect(wallet).approve(staking.address, MaxUint256);
@@ -60,8 +60,9 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
       const result = await staking.totalPilotStaked();
       expect(result).to.equal(ONE);
     });
+
     it("should let the governanec to change", async () => {
-      console.log("new", newWallet.address);
+      // console.log("new", newWallet.address);
       let newGovernance = staking.setGovernance(newWallet.address);
       await expect(newGovernance).to.not.reverted;
       let resolvedNewGovernance = await newGovernance;
@@ -72,6 +73,7 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
 
       await staking.connect(newWallet).setGovernance(wallet.address);
     });
+
     it("should not let the governance to change on zero address and non-governance call", async () => {
       await expect(staking.connect(newWallet).setGovernance(newWallet.address)).to.be.revertedWith(
         "CallerNotGovernance",
@@ -79,9 +81,10 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
 
       await expect(staking.setGovernance(ZERO_ADDRESS)).to.be.revertedWith("ZeroAddress");
     });
+
     it("sohuld let stakes from users and update reward token with 0 reward to claim", async () => {
-      let aliceStake = await staking.connect(alice).stake(TEN);
-      let bobStake = await staking.connect(bob).stake(TEN);
+      let aliceStake = await staking.stake(alice.address, TEN);
+      let bobStake = await staking.stake(bob.address, TEN);
 
       //rewardPeriod ended here
       await staking.updateRewardEndBlock(0);
@@ -102,27 +105,31 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
       expectEventForAll(staking, aliceClaim, alice, TEN, "5500000000000000000", TX_TYPE.CLAIM);
       expectEventForAll(staking, bobClaim, bob, TEN, "5500000000000000000", TX_TYPE.CLAIM);
     });
+
     it("should end the period of staking", async () => {
       await staking.updateRewardEndBlock(0);
-      await expect(staking.connect(alice).stake(ONE)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
+      await expect(staking.stake(alice.address, ONE)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
     });
+
     it("should halt the staking and let to resume again", async () => {
       await staking.updateRewardEndBlock(0);
-      await expect(staking.connect(alice).stake(ONE)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
+      await expect(staking.stake(alice.address, ONE)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
       await staking.updateRewardEndBlock(100);
 
-      let aliceStake = await staking.connect(alice).stake(ONE);
+      let aliceStake = await staking.stake(alice.address, ONE);
       expectEventForAll(staking, aliceStake, alice, ONE, 0, TX_TYPE.STAKE);
     });
+
     it("should let to stake after reward token update", async () => {
       await SECONDARY_TOKEN.transfer(staking.address, HUNDRED);
       await staking.updateRewardEndBlock(0);
       await staking.updateRewardToken(SECONDARY_TOKEN.address);
       await staking.updateRewards(100, 100);
       await mineNBlocks(8); //mining only 8 blocks bcz 2 blocks were mined during the above tx
-      let aliceStake = await staking.connect(alice).stake(ONE);
+      let aliceStake = await staking.stake(alice.address, ONE);
       expectEventForAll(staking, aliceStake, alice, ONE, 0, TX_TYPE.STAKE);
     });
+
     it("should run out of funds then extendPeriod will handle this", async () => {
       console.log("reward/block:", await staking.currentRewardPerBlock());
       let periodEnd = await staking.periodEndBlock();
@@ -130,7 +137,7 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
       await mineNBlocks(50);
 
       //50 blocks gone unrewarded
-      await staking.connect(alice).stake(TEN);
+      await staking.stake(alice.address, TEN);
 
       let currentBlock = await staking.lastUpdateBlock();
       console.log("stake b#", currentBlock);
@@ -141,7 +148,7 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
       await staking.connect(alice).claim();
 
       //can't stake after reward period has ended
-      await expect(staking.connect(alice).stake(ONE)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
+      await expect(staking.stake(alice.address, ONE)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
 
       //extending undistributed period
       await staking.updateRewardEndBlock(100 - remainingBlocks);

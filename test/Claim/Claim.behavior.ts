@@ -60,21 +60,23 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       const result = await staking.totalPilotStaked();
       expect(result).to.equal("0");
     });
+
     it("should periodically stake twice and claim", async () => {
       let TEN = parseUnits("10", "18");
       await mineNBlocks(20);
 
-      let stake1 = await staking.connect(alice).stake(TEN);
+      let stake1 = await staking.stake(alice.address, TEN);
       expectEventForAll(staking, stake1, alice, TEN, "0", TX_TYPE.STAKE);
       await mineNBlocks(20);
 
-      let stake2 = await staking.connect(alice).stake(TEN);
+      let stake2 = await staking.stake(alice.address, TEN);
       expectEventForAll(staking, stake2, alice, TEN, "699999999999999990", TX_TYPE.STAKE);
       await mineNBlocks(10);
 
       let claimed = await staking.connect(alice).claim();
       expectEventForAll(staking, claimed, alice, TEN.mul(2), "366666666666666660", TX_TYPE.CLAIM);
     });
+
     //NOTICE: this case is only possible if the updateReward and last stake/unstake/claim are in the same block
     //        because these four functions update the lastUpdateBlock
     it("should revert on claim for contract out ot funds", async () => {
@@ -82,20 +84,21 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
 
       await WETH.connect(wallet).transfer(staking.address, 100); // 100 WETH
       await staking.updateRewards(100, "3");
-      let stake1 = await staking.connect(alice).stake(HundredWETH);
+      let stake1 = await staking.stake(alice.address, HundredWETH);
       expectEventForAll(staking, stake1, alice, HundredWETH, "0", TX_TYPE.STAKE);
 
       await mineNBlocks(3300);
       await expect(staking.connect(alice).claim()).to.be.revertedWith("InsufficientFunds");
     });
+
     // NOTICE: having some issues with alice claim, not sure why, for time being, ignoring this
     it("should work with multiple user deposit and calculate same reward for all", async () => {
       let HundredWETH = parseUnits("100", "18");
       await ethers.provider.send("evm_setAutomine", [false]);
 
-      await staking.connect(alice).stake(HundredWETH);
-      await staking.connect(bob).stake(HundredWETH);
-      await staking.connect(carol).stake(HundredWETH);
+      await staking.stake(alice.address, HundredWETH);
+      await staking.stake(bob.address, HundredWETH);
+      await staking.stake(carol.address, HundredWETH);
 
       await ethers.provider.send("evm_setAutomine", [true]);
       await mineNBlocks(20);
@@ -113,10 +116,11 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       expectEventForAll(staking, bobPendingReward, bob, HundredWETH, "222222222222222200", TX_TYPE.CLAIM);
       expectEventForAll(staking, carolPendingReward, carol, HundredWETH, "222222222222222200", TX_TYPE.CLAIM);
     });
+
     // NOTICE: This has to revert, conditions are meeting but not reverting somehow.
     it("alice can not double claim", async () => {
       let HundredWETH = parseUnits("100", "18");
-      await staking.connect(alice).stake(HundredWETH);
+      await staking.stake(alice.address, HundredWETH);
       await mineNBlocks(20);
 
       await ethers.provider.send("evm_setAutomine", [false]);
@@ -127,10 +131,11 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       expectEventForAll(staking, aliceClaim1, alice, HundredWETH, "699999999999999900", TX_TYPE.CLAIM);
       expectEventForAll(staking, aliceClaim2, alice, HundredWETH, "0", TX_TYPE.CLAIM);
     });
+
     // NOTICE: unstake and claim in the same block, which has to revert, but not reverting
     xit("should stake, then unstake and claim in the same block, results in a revret", async () => {
       let HundredWETH = parseUnits("100", "18");
-      await staking.connect(alice).stake(HundredWETH);
+      await staking.stake(alice.address, HundredWETH);
       await mineNBlocks(20);
 
       await ethers.provider.send("evm_setAutomine", [false]);

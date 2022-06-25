@@ -2,7 +2,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
-import "solidity-coverage";
+// import "solidity-coverage";
 
 import "./tasks/deploy/staking";
 
@@ -10,7 +10,7 @@ import { resolve } from "path";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
-import { NetworkUserConfig } from "hardhat/types";
+import { HardhatNetworkAccountUserConfig, NetworkUserConfig } from "hardhat/types";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -26,7 +26,7 @@ const chainIds = {
 };
 
 // Ensure that we have all the environment variables we need.
-const mnemonic: string | undefined = process.env.MNEMONIC;
+const mnemonic: string | undefined | HardhatNetworkAccountUserConfig = process.env.MNEMONIC;
 if (!mnemonic) {
   throw new Error("Please set your MNEMONIC in a .env file");
 }
