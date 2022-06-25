@@ -99,49 +99,12 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       expectEventForAll(staking, claim3, alice, HundredWETH, "66666666666666600", TX_TYPE.CLAIM);
     });
 
-    // NOTICE: this has to fix on contract level to only view reward.
-    xit("should stake more and more view the accumulate reward so far", async () => {
-      let HundredWETH = parseUnits("100", "18");
-      let ONE = parseUnits("1", "18");
-
-      let stake1 = await staking.stake(alice.address, ONE);
-      expectEventForAll(staking, stake1, alice, ONE, "0", TX_TYPE.STAKE);
-      await mineNBlocks(20);
-
-      let stake2 = await staking.stake(alice.address, ONE);
-      expectEventForAll(staking, stake2, alice, ONE, "699999999999999993", TX_TYPE.STAKE);
-      await mineNBlocks(10);
-      let alicePendingReward = await staking.calculatePendingRewards(alice.address);
-      console.log("alicePendingReward:", alicePendingReward); //1033333333333333323
-    });
-
     it("should not stake after rewardDistribution end", async () => {
       let HundredWETH = parseUnits("100", "18");
       // await WETH.connect(wallet).transfer(staking.address, HundredWETH);
       // await staking.connect(wallet).updateRewards(100, "3");
       await mineNBlocks(4000);
       await expect(staking.stake(alice.address, HundredWETH)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
-    });
-
-    it("basic single user calculation to check contract works as expected", async () => {
-      await mineNBlocks(3000);
-
-      const blncBefore = await WETH.balanceOf(wallet.address);
-      const blocksPassed = 10;
-
-      await ethers.provider.send("evm_setAutomine", [false]);
-      await staking.updateRewards(10, 10);
-      await staking.stake(wallet.address, parseUnits("10", "18"));
-
-      /// hardhat don't allow wallet switching if you use evm_setAutomine
-      await ethers.provider.send("evm_setAutomine", [true]);
-      await mineNBlocks(blocksPassed);
-      const perBlockReward = await staking.currentRewardPerBlock();
-
-      await staking.unstake(parseUnits("10", "18"));
-      const blncAfter = await WETH.balanceOf(wallet.address);
-
-      expect(blncBefore).to.be.eq(blncAfter.sub(perBlockReward.mul(blocksPassed)));
     });
 
     it("two user accumulation calculation", async () => {
@@ -223,7 +186,9 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       expect(user2PendingRewards.add("800000000000000000")).to.be.eq(user2BalanceAfter.sub(user2BalanceBefore));
     });
 
-    xit("changing reward token multiple times to verify user's share", async () => {
+    it("changing reward token multiple times to verify user's share", async () => {
+      await mineNBlocks(3000);
+
       // making alice rich now ^_^
       await WETH.transfer(alice.address, await WETH.balanceOf(wallet.address));
       await WETH.connect(carol).transfer(alice.address, await WETH.balanceOf(carol.address));
@@ -232,7 +197,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       await staking.stake(wallet.address, parseUnits("600", "18"));
       await staking.connect(carol).stake(carol.address, parseUnits("600", "18"));
 
-      await mineNBlocks((await staking.periodEndBlock()).toNumber());
+      await mineNBlocks(100);
 
       let user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
       let user2PendingRewards = await staking.calculatePendingRewards(carol.address);
@@ -250,7 +215,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       await staking.updateRewardToken(testToken.address);
       await staking.updateRewards(100, 100);
 
-      await mineNBlocks(await (await staking.periodEndBlock()).toNumber());
+      await mineNBlocks(100);
 
       user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
       user2PendingRewards = await staking.calculatePendingRewards(carol.address);
@@ -261,7 +226,21 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       expect(user2PendingRewards).to.be.eq(await testToken.balanceOf(carol.address));
       expect(user1PendingRewards).to.be.eq((await testToken.balanceOf(wallet.address)).sub(1));
 
-      console.log("contract blnc", await testToken.balanceOf(staking.address));
+      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+
+      await WETH.mint(staking.address, parseUnits("500", "18"));
+
+      await staking.updateRewardToken(WETH.address);
+      await staking.updateRewards(500, 100);
+
+      await mineNBlocks(100);
+
+      user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
+      user2PendingRewards = await staking.calculatePendingRewards(carol.address);
+
+      // await staking.claim();
+      // await staking.connect(carol).claim();
+
       console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await testToken.mint(staking.address, parseUnits("100", "18"));
@@ -269,15 +248,26 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       await staking.updateRewardToken(testToken.address);
       await staking.updateRewards(100, 100);
 
-      await mineNBlocks(await (await staking.periodEndBlock()).toNumber());
+      await mineNBlocks(100);
 
       user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
       user2PendingRewards = await staking.calculatePendingRewards(carol.address);
 
-      await staking.claim();
-      await staking.connect(carol).claim();
+      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
-      console.log("contract blnc", await testToken.balanceOf(staking.address));
+      await WETH.mint(staking.address, parseUnits("500", "18"));
+
+      await staking.updateRewardToken(WETH.address);
+      await staking.updateRewards(100, 100);
+
+      await mineNBlocks(100);
+
+      user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
+      user2PendingRewards = await staking.calculatePendingRewards(carol.address);
+
+      // await staking.claim();
+      // await staking.connect(carol).claim();
+
       console.log("usr1,2", user1PendingRewards, user2PendingRewards);
     });
   });
