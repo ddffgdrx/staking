@@ -2,17 +2,19 @@
 pragma solidity 0.8.15;
 
 // Openzeppelin helper
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // Definition of custom errors
 error AmountLessThanStakedAmountOrZero();
 error CallerNotGovernance();
 error EtherNotAccepted();
-error InputLengthMismatch();
 error InsufficientFunds();
+error InsufficientPilotFunds();
+error InputLengthMismatch();
 error NoPendingRewardsToClaim();
 error NoStakeFound();
+error PilotAddressInput();
 error RewardDistributionPeriodHasExpired();
 error RewardPerBlockIsNotSet();
 error ZeroAddress();
@@ -69,16 +71,31 @@ contract UnipilotStaking {
     // Info of each user that stakes Pilot tokens
     mapping(address => UserInfo) public userInfo;
 
-    event StakeOrUnstakeOrClaim(address indexed user, uint256 amount, uint256 pendingReward, TxType txType);
+    event StakeOrUnstakeOrClaim(
+        address indexed user,
+        uint256 amount,
+        uint256 pendingReward,
+        TxType txType
+    );
     event NewRewardPeriod(
         uint256 numberBlocksToDistributeRewards,
         uint256 newRewardPerBlock,
         uint256 rewardToDistribute,
         uint256 rewardExpirationBlock
     );
-    event GovernanceChanged(address indexed oldGovernance, address indexed newGovernance);
-    event RewardTokenChanged(address indexed oldRewardToken, address indexed newRewardToken);
-    event FundsMigrated(address indexed _newVersion, IERC20Metadata[] _tokens, uint256[] _amounts);
+    event GovernanceChanged(
+        address indexed oldGovernance,
+        address indexed newGovernance
+    );
+    event RewardTokenChanged(
+        address indexed oldRewardToken,
+        address indexed newRewardToken
+    );
+    event FundsMigrated(
+        address indexed _newVersion,
+        IERC20Metadata[] _tokens,
+        uint256[] _amounts
+    );
 
     /**
      * @notice Constructor
@@ -91,7 +108,11 @@ contract UnipilotStaking {
         address _rewardToken,
         address _pilotToken
     ) {
-        if (_governance == address(0) || _rewardToken == address(0) || _pilotToken == address(0)) revert ZeroAddress();
+        if (
+            _governance == address(0) ||
+            _rewardToken == address(0) ||
+            _pilotToken == address(0)
+        ) revert ZeroAddress();
 
         governance = _governance;
         rewardToken = IERC20Metadata(_rewardToken);
@@ -132,7 +153,10 @@ contract UnipilotStaking {
      * @param _newRewardToken address of the new reward token
      * @dev Only callable by Governance. It also resets reward distribution accounting
      */
-    function updateRewardToken(address _newRewardToken) external onlyGovernance {
+    function updateRewardToken(address _newRewardToken)
+        external
+        onlyGovernance
+    {
         if (_newRewardToken == address(0)) revert ZeroAddress();
 
         // Resetting reward distribution accounting
@@ -151,7 +175,10 @@ contract UnipilotStaking {
      * @param _rewardDurationInBlocks total number of blocks in which the '_reward' should be distributed
      * @dev Only callable by Governance. Enter both params in decimal format
      */
-    function updateRewards(uint256 _reward, uint256 _rewardDurationInBlocks) external onlyGovernance {
+    function updateRewards(uint256 _reward, uint256 _rewardDurationInBlocks)
+        external
+        onlyGovernance
+    {
         if (_rewardDurationInBlocks == 0) revert ZeroInput();
 
         // Update reward distribution accounting
@@ -169,7 +196,8 @@ contract UnipilotStaking {
         else {
             // Upscaling '_reward' to 18 decimals before calculating 'currentRewardPerBlock'
             currentRewardPerBlock =
-                ((_reward * ONE) + ((periodEndBlock - block.number) * currentRewardPerBlock)) /
+                ((_reward * ONE) +
+                    ((periodEndBlock - block.number) * currentRewardPerBlock)) /
                 _rewardDurationInBlocks;
         }
 
@@ -178,7 +206,12 @@ contract UnipilotStaking {
         // Setting rewards expiration block
         periodEndBlock = block.number + _rewardDurationInBlocks;
 
-        emit NewRewardPeriod(_rewardDurationInBlocks, currentRewardPerBlock, _reward, periodEndBlock);
+        emit NewRewardPeriod(
+            _rewardDurationInBlocks,
+            currentRewardPerBlock,
+            _reward,
+            periodEndBlock
+        );
     }
 
     /**
@@ -186,7 +219,13 @@ contract UnipilotStaking {
      * @param _expireDurationInBlocks number of blocks after which reward distribution should be halted
      * @dev Only callable by Governance
      */
-    function updateRewardEndBlock(uint256 _expireDurationInBlocks) external onlyGovernance {
+    function updateRewardEndBlock(uint256 _expireDurationInBlocks)
+        external
+        onlyGovernance
+    {
+        // Update reward distribution accounting
+        _updateRewardPerPilotAndLastBlock();
+
         periodEndBlock = block.number + _expireDurationInBlocks;
     }
 
@@ -217,11 +256,14 @@ contract UnipilotStaking {
             tokenAddress = _tokens[i];
             amount = _amounts[i];
 
+            if (tokenAddress == pilotToken) revert PilotAddressInput();
+
             if (address(tokenAddress) == address(0)) revert ZeroAddress();
 
             if (amount == 0) revert ZeroInput();
 
-            if (amount > tokenAddress.balanceOf(address(this))) revert InsufficientFunds();
+            if (amount > tokenAddress.balanceOf(address(this)))
+                revert InsufficientFunds();
 
             tokenAddress.safeTransfer(_newVersion, amount);
             unchecked {
@@ -232,10 +274,13 @@ contract UnipilotStaking {
         // Migrate pilot tokens
         if (_isPilotMigrate) {
             // Pilot token balance of this contract minus staked pilot
-            uint256 protocolPilotBalance = pilotToken.balanceOf(address(this)) - totalPilotStaked;
+            uint256 protocolPilotBalance = pilotToken.balanceOf(address(this)) -
+                totalPilotStaked;
 
             // If protocol owns any pilot in this contract then transfer
-            if (protocolPilotBalance > 0) pilotToken.safeTransfer(_newVersion, protocolPilotBalance);
+            if (protocolPilotBalance > 0)
+                pilotToken.safeTransfer(_newVersion, protocolPilotBalance);
+            else revert InsufficientPilotFunds();
         }
         emit FundsMigrated(_newVersion, _tokens, _amounts);
     }
@@ -248,11 +293,15 @@ contract UnipilotStaking {
     function stake(address _to, uint256 _amount) external {
         if (_amount == 0) revert ZeroInput();
 
+        if (_to == address(0)) revert ZeroAddress();
+
         if (currentRewardPerBlock == 0) revert RewardPerBlockIsNotSet();
 
-        if (block.number >= periodEndBlock) revert RewardDistributionPeriodHasExpired();
+        if (block.number >= periodEndBlock)
+            revert RewardDistributionPeriodHasExpired();
 
-        if (rewardToken.balanceOf(address(this)) == 0) revert InsufficientFunds();
+        if (rewardToken.balanceOf(address(this)) == 0)
+            revert InsufficientFunds();
 
         _stakeOrUnstakeOrClaim(_to, _amount, TxType.STAKE);
     }
@@ -262,7 +311,8 @@ contract UnipilotStaking {
      * @param _amount amount of pilot tokens to unstake
      */
     function unstake(uint256 _amount) external {
-        if ((_amount > userInfo[msg.sender].amount) || _amount == 0) revert AmountLessThanStakedAmountOrZero();
+        if ((_amount > userInfo[msg.sender].amount) || _amount == 0)
+            revert AmountLessThanStakedAmountOrZero();
 
         _stakeOrUnstakeOrClaim(msg.sender, _amount, TxType.UNSTAKE);
     }
@@ -272,7 +322,11 @@ contract UnipilotStaking {
      */
     function emergencyUnstake() external {
         if (userInfo[msg.sender].amount > 0) {
-            _stakeOrUnstakeOrClaim(msg.sender, userInfo[msg.sender].amount, TxType.EMERGENCY);
+            _stakeOrUnstakeOrClaim(
+                msg.sender,
+                userInfo[msg.sender].amount,
+                TxType.EMERGENCY
+            );
         } else revert NoStakeFound();
     }
 
@@ -280,7 +334,11 @@ contract UnipilotStaking {
      * @notice Claim pending rewards.
      */
     function claim() external {
-        _stakeOrUnstakeOrClaim(msg.sender, userInfo[msg.sender].amount, TxType.CLAIM);
+        _stakeOrUnstakeOrClaim(
+            msg.sender,
+            userInfo[msg.sender].amount,
+            TxType.CLAIM
+        );
     }
 
     /**
@@ -288,13 +346,18 @@ contract UnipilotStaking {
      * @param _user address of the user
      * @return pending rewards of the user
      */
-    function calculatePendingRewards(address _user) external view returns (uint256) {
+    function calculatePendingRewards(address _user)
+        external
+        view
+        returns (uint256)
+    {
         uint256 newAccRewardPerPilot;
 
         if (totalPilotStaked != 0) {
             newAccRewardPerPilot =
                 accRewardPerPilot +
-                (((_lastRewardBlock() - lastUpdateBlock) * (currentRewardPerBlock * ONE)) / totalPilotStaked);
+                (((_lastRewardBlock() - lastUpdateBlock) *
+                    (currentRewardPerBlock * ONE)) / totalPilotStaked);
             // If checking user pending rewards in the block in which reward token is updated
             if (newAccRewardPerPilot == 0) return 0;
         } else return 0;
@@ -304,7 +367,8 @@ contract UnipilotStaking {
         // Reset debt if user is checking rewards after reward token changed
         if (userInfo[_user].rewardToken != address(rewardToken)) rewardDebt = 0;
 
-        uint256 pendingRewards = ((userInfo[_user].amount * newAccRewardPerPilot) / ONE) - rewardDebt;
+        uint256 pendingRewards = ((userInfo[_user].amount *
+            newAccRewardPerPilot) / ONE) - rewardDebt;
 
         // Downscale if reward token has less than 18 decimals
         if (_computeScalingFactor(rewardToken) != 1) {
@@ -357,13 +421,15 @@ contract UnipilotStaking {
 
                 // If there are rewards to distribute
                 if (pendingRewards > 0) {
-                    if (pendingRewards > rewardToken.balanceOf(address(this))) revert InsufficientFunds();
+                    if (pendingRewards > rewardToken.balanceOf(address(this)))
+                        revert InsufficientFunds();
 
                     // Transferring rewards to the user
                     rewardToken.safeTransfer(_to, pendingRewards);
                 }
                 // If there are no pending rewards and tx is of claim then revert
-                else if (TxType.CLAIM == _txType) revert NoPendingRewardsToClaim();
+                else if (TxType.CLAIM == _txType)
+                    revert NoPendingRewardsToClaim();
             }
             // Claiming rewards without any stake
             else if (TxType.CLAIM == _txType) revert NoPendingRewardsToClaim();
@@ -420,18 +486,26 @@ contract UnipilotStaking {
         }
 
         accRewardPerPilot +=
-            ((_lastRewardBlock() - lastUpdateBlock) * (currentRewardPerBlock * ONE)) /
+            ((_lastRewardBlock() - lastUpdateBlock) *
+                (currentRewardPerBlock * ONE)) /
             totalPilotStaked;
 
-        if (block.number != lastUpdateBlock) lastUpdateBlock = _lastRewardBlock();
+        if (block.number != lastUpdateBlock)
+            lastUpdateBlock = _lastRewardBlock();
     }
 
     /**
      * @notice Calculate pending rewards for a user
      * @param _user address of the user
      */
-    function _calculatePendingRewards(address _user) private view returns (uint256) {
-        return ((userInfo[_user].amount * accRewardPerPilot) / ONE) - userInfo[_user].rewardDebt;
+    function _calculatePendingRewards(address _user)
+        private
+        view
+        returns (uint256)
+    {
+        return
+            ((userInfo[_user].amount * accRewardPerPilot) / ONE) -
+            userInfo[_user].rewardDebt;
     }
 
     /**
@@ -445,7 +519,11 @@ contract UnipilotStaking {
      * @notice Returns a scaling factor that, when multiplied to a token amount for `token`, normalizes its balance as if
      * it had 18 decimals.
      */
-    function _computeScalingFactor(IERC20Metadata _token) private view returns (uint256) {
+    function _computeScalingFactor(IERC20Metadata _token)
+        private
+        view
+        returns (uint256)
+    {
         // Tokens that don't implement the `decimals` method are not supported.
         uint256 tokenDecimals = _token.decimals();
 
