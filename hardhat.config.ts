@@ -10,7 +10,10 @@ import { resolve } from "path";
 
 import { config as dotenvConfig } from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
-import { HardhatNetworkAccountUserConfig, NetworkUserConfig } from "hardhat/types";
+import {
+  HardhatNetworkAccountUserConfig,
+  NetworkUserConfig,
+} from "hardhat/types";
 
 dotenvConfig({ path: resolve(__dirname, "./.env") });
 
@@ -41,7 +44,9 @@ let alchemyapiKey = process.env.FORK;
 
 const etherscanApiKey = process.env.ETHERSCAN_API_KEY;
 
-function createTestnetConfig(network: keyof typeof chainIds): NetworkUserConfig {
+function createTestnetConfig(
+  network: keyof typeof chainIds
+): NetworkUserConfig {
   const url: string =
     network == "mumbai"
       ? "https://speedy-nodes-nyc.moralis.io/127149d18dffd833851dc9f2/polygon/mumbai"
@@ -51,7 +56,7 @@ function createTestnetConfig(network: keyof typeof chainIds): NetworkUserConfig 
     chainId: chainIds[network],
     url,
     gas: 2100000,
-    gasPrice: 48000000000,
+    gasPrice: 58000000000,
   };
 }
 const coinMarketCapKey = process.env.COIN_MARKETCAP;
@@ -61,7 +66,7 @@ const config: HardhatUserConfig = {
   gasReporter: {
     currency: "USD",
     coinmarketcap: coinMarketCapKey,
-    gasPrice: 48,
+    gasPrice: 58,
     enabled: process.env.REPORT_GAS ? true : false,
     excludeContracts: [],
     src: "./contracts",
