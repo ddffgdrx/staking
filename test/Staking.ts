@@ -9,8 +9,12 @@ import { shouldBehaveLikeSixDecimalsToken } from "./SixDecimalsToken/SixDecimals
 
 use(solidity);
 
+//NOTICE: run all tasks independently, not all at the same time.
+//there is some issue in hardhat local env. of network skewness.
+//due to which events emission is skipped
+//so it would be better to run one task at a time
 describe("Invokes Stake", async () => {
-  // await shouldBehaveLikeStake();
+  await shouldBehaveLikeStake();
 });
 
 describe("Invokes Claim", async () => {
@@ -26,9 +30,9 @@ describe("Invokes Governance", async () => {
 });
 
 describe("Invokes View Reward", async () => {
-  // await shouldBehaveLikeViewRewards(); //this thing is breaking,
+  // await shouldBehaveLikeViewRewards();
 });
 
 describe("Invokes Six Decimals Tokens", async () => {
-  await shouldBehaveLikeSixDecimalsToken();
+  // await shouldBehaveLikeSixDecimalsToken();
 });

@@ -52,7 +52,7 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
   });
   beforeEach("fixtures", async () => {
     await WETH.transfer(staking.address, parseUnits("100", "18"));
-    await staking.updateRewards(100, "3000");
+    await staking.updateRewards(100, 3000);
     await staking.stake(wallet.address, parseUnits("1", "18"));
   });
   describe("#Unstake", () => {
@@ -88,7 +88,7 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
       let TEN = parseUnits("10", "18");
       let HundredWETH = parseUnits("100", "18");
       //stake
-      await staking.stake(alice.address, TEN);
+      await staking.connect(alice).stake(alice.address, TEN);
       //1st update
       await mineNBlocks(30);
       await WETH.transfer(staking.address, HundredWETH);
@@ -133,6 +133,11 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
     });
 
     it("should show correct balances of contract ($PILOT & $TOKEN) after unstaking", async () => {
+      //after this emergency unstake of wallet, rewards after this tx will be completely rewarded to alice
+      //and all those rewards that are not claimed by wallet will be left unclaimed in the contract
+      //and can be withdrawn by governance using migrateFunds.
+      await staking.connect(wallet).emergencyUnstake();
+
       const HUNDRED = parseUnits("100", "18");
       let contractPilotBalanceBefore = await pilot.balanceOf(staking.address);
       let contractWETHBalanceBefore = await WETH.balanceOf(staking.address);
@@ -141,11 +146,11 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
 
       await mineNBlocks(100);
       let unstakeWithClaim = await staking.connect(alice).unstake(HUNDRED);
-      expectEventForAll(staking, unstakeWithClaim, alice, HUNDRED, "6344790356394129800", TX_TYPE.UNSTAKE);
+      expectEventForAll(staking, unstakeWithClaim, alice, HUNDRED, "6725477777777777600", TX_TYPE.UNSTAKE);
 
       let contractPilotBalanceAfter = await pilot.balanceOf(staking.address);
       let contractWETHBalanceAfter = await WETH.balanceOf(staking.address);
-      let expectedReward = BigNumber.from("6344790356394129800");
+      let expectedReward = BigNumber.from("6725477777777777600");
 
       expect(contractWETHBalanceBefore).to.equal(contractWETHBalanceAfter.add(expectedReward));
       expect(contractPilotBalanceBefore).to.equal(contractPilotBalanceAfter);
