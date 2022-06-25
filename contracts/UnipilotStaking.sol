@@ -97,6 +97,10 @@ contract UnipilotStaking {
         IERC20Metadata[] _tokens,
         uint256[] _amounts
     );
+    event PeriodEndBlockUpdate(
+        uint256 numberBlocksToDistributeRewards,
+        uint256 rewardExpirationBlock
+    );
 
     /**
      * @notice Constructor
@@ -231,6 +235,7 @@ contract UnipilotStaking {
 
         // Setting rewards expiration block
         periodEndBlock = block.number + _expireDurationInBlocks;
+        emit PeriodEndBlockUpdate(_expireDurationInBlocks, periodEndBlock);
     }
 
     /**
