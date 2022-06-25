@@ -13,6 +13,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
   let staking: UnipilotStaking;
   let pilot: TestERC20;
   let WETH: TestERC20;
+  let testToken: TestERC20;
 
   const [wallet, alice, bob, carol] = waffle.provider.getWallets();
 
@@ -27,6 +28,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     staking = res.staking;
     pilot = res.pilot;
     WETH = res.WETH;
+    testToken = res.testToken;
 
     let HundredWETH = parseUnits("100", "18");
 
@@ -193,6 +195,10 @@ export async function shouldBehaveLikeStake(): Promise<void> {
 
       // pendingRewards is not equal to user balance because hardhat not including both txs in single block
       expect(user1PendingRewards.add("200000000000000000")).to.be.eq(user1BalanceAfter.sub(user1BalanceBefore));
+      expect(await staking.currentRewardPerBlock()).to.be.eq(parseUnits("1", "18"));
+      expect(await staking.totalPilotStaked()).to.be.eq(parseUnits("500", "18"));
+      expect(await staking.rewardToken()).to.be.eq(WETH.address);
+      expect(await staking.pilotToken()).to.be.eq(pilot.address);
 
       blocksPassed = 10;
       mineNBlocks(blocksPassed);
@@ -208,8 +214,6 @@ export async function shouldBehaveLikeStake(): Promise<void> {
        * User2 harvests 12 and StakerBAccumulatedRewards resets to 0.
        */
 
-      await ethers.provider.send("evm_setIntervalMining", [5000]);
-
       const user2BalanceBefore = await WETH.balanceOf(alice.address);
       const user2PendingRewards = await staking.calculatePendingRewards(alice.address);
       await staking.connect(alice).claim();
@@ -217,6 +221,64 @@ export async function shouldBehaveLikeStake(): Promise<void> {
 
       // pendingRewards is not equal to user balance because hardhat not including both txs in single block
       expect(user2PendingRewards.add("800000000000000000")).to.be.eq(user2BalanceAfter.sub(user2BalanceBefore));
+    });
+
+    it("changing reward token multiple times to verify user's share", async () => {
+      // making alice rich now ^_^
+      await WETH.transfer(alice.address, await WETH.balanceOf(wallet.address));
+      await WETH.connect(carol).transfer(alice.address, await WETH.balanceOf(carol.address));
+
+      await staking.updateRewards(100, 100);
+      await staking.stake(parseUnits("600", "18"));
+      await staking.connect(carol).stake(parseUnits("600", "18"));
+
+      await mineNBlocks(await (await staking.periodEndBlock()).toNumber());
+
+      let user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
+      let user2PendingRewards = await staking.calculatePendingRewards(carol.address);
+
+      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+
+      await staking.claim();
+      await staking.connect(carol).claim();
+
+      expect(user1PendingRewards).to.be.eq(await WETH.balanceOf(wallet.address));
+      expect(user2PendingRewards).to.be.eq(await WETH.balanceOf(carol.address));
+
+      await testToken.mint(staking.address, parseUnits("100", "18"));
+
+      await staking.updateRewardToken(testToken.address);
+      await staking.updateRewards(100, 100);
+
+      await mineNBlocks(await (await staking.periodEndBlock()).toNumber());
+
+      user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
+      user2PendingRewards = await staking.calculatePendingRewards(carol.address);
+
+      await staking.claim();
+      await staking.connect(carol).claim();
+
+      expect(user2PendingRewards).to.be.eq(await testToken.balanceOf(carol.address));
+      expect(user1PendingRewards).to.be.eq((await testToken.balanceOf(wallet.address)).sub(1));
+
+      console.log("contract blnc", await testToken.balanceOf(staking.address));
+      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+
+      await testToken.mint(staking.address, parseUnits("100", "18"));
+
+      await staking.updateRewardToken(testToken.address);
+      await staking.updateRewards(100, 100);
+
+      await mineNBlocks(await (await staking.periodEndBlock()).toNumber());
+
+      user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
+      user2PendingRewards = await staking.calculatePendingRewards(carol.address);
+
+      await staking.claim();
+      await staking.connect(carol).claim();
+
+      console.log("contract blnc", await testToken.balanceOf(staking.address));
+      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
     });
   });
 }
