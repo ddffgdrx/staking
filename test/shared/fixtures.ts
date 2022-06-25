@@ -8,14 +8,16 @@ import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 interface TokensFixture {
   pilot: TestERC20;
   WETH: TestERC20;
+  testToken: TestERC20;
 }
 
 async function tokensFixture(): Promise<TokensFixture> {
   const tokenFactory = await ethers.getContractFactory("TestERC20");
   const pilot = (await tokenFactory.deploy(BigNumber.from(1).pow(255))) as TestERC20;
   const WETH = (await tokenFactory.deploy(BigNumber.from(1).pow(255))) as TestERC20;
+  const testToken = (await tokenFactory.deploy(BigNumber.from(1).pow(255))) as TestERC20;
 
-  return { pilot, WETH };
+  return { pilot, WETH, testToken };
 }
 
 interface StakingFixture {
@@ -36,7 +38,7 @@ type TokensAndStakingFixture = StakingFixture & TokensFixture;
 export const stakingConfigFixture: Fixture<TokensAndStakingFixture> =
   async function (): Promise<TokensAndStakingFixture> {
     const [wallet, alice, bob, carol, other, user0, user1, user2, user3, user4] = waffle.provider.getWallets();
-    const { pilot, WETH } = await tokensFixture();
+    const { pilot, WETH, testToken } = await tokensFixture();
     const { staking } = await stakingFixture(wallet, WETH, pilot);
-    return { staking, pilot, WETH };
+    return { staking, pilot, WETH, testToken };
   };
