@@ -29,7 +29,7 @@ contract UnipilotStaking {
 
     // Info of each user
     struct UserInfo {
-        address rewardToken; // Should hold address of the current reward token - used to reset user reward debt
+        uint256 lastUpdateRewardToken; // Should hold address of the current reward token - used to reset user reward debt
         uint256 amount; // Amount of pilot tokens staked by the user
         uint256 rewardDebt; // Reward debt
     }
@@ -68,6 +68,9 @@ contract UnipilotStaking {
 
     // Current end block for the current reward period
     uint256 public periodEndBlock;
+
+    // Last time reward token was updated
+    uint256 public lastUpdateRewardToken;
 
     // Info of each user that stakes Pilot tokens
     mapping(address => UserInfo) public userInfo;
@@ -168,6 +171,9 @@ contract UnipilotStaking {
         // Resetting reward distribution accounting
         accRewardPerPilot = 0;
         lastUpdateBlock = _lastRewardBlock();
+
+        // Reward token update time
+        lastUpdateRewardToken = block.timestamp;
 
         emit RewardTokenChanged(address(rewardToken), _newRewardToken);
 
@@ -374,7 +380,8 @@ contract UnipilotStaking {
         uint256 rewardDebt = userInfo[_user].rewardDebt;
 
         // Reset debt if user is checking rewards after reward token changed
-        if (userInfo[_user].rewardToken != address(rewardToken)) rewardDebt = 0;
+        if (userInfo[_user].lastUpdateRewardToken < lastUpdateRewardToken)
+            rewardDebt = 0;
 
         uint256 pendingRewards = ((userInfo[_user].amount *
             newAccRewardPerPilot) / ONE) - rewardDebt;
@@ -476,12 +483,12 @@ contract UnipilotStaking {
      */
     function _resetDebtIfNewRewardToken(address _to) private {
         // Reset debt if user reward token is different than current reward token
-        if (userInfo[_to].rewardToken != address(rewardToken)) {
+        if (userInfo[_to].lastUpdateRewardToken < lastUpdateRewardToken) {
             // Don't reset debt if reward token is null as it indicates that reward token hasn't changed since contract deployment
-            if (userInfo[_to].rewardToken != address(0)) {
-                userInfo[_to].rewardDebt = 0;
-            }
-            userInfo[_to].rewardToken = address(rewardToken);
+            // if (userInfo[_to].lastUpdateRewardToken != 0) {
+            userInfo[_to].rewardDebt = 0;
+            // }
+            userInfo[_to].lastUpdateRewardToken = block.timestamp;
         }
     }
 
