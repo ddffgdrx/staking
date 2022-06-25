@@ -26,10 +26,11 @@ const chainIds = {
 };
 
 // Ensure that we have all the environment variables we need.
-const mnemonic: string | undefined | HardhatNetworkAccountUserConfig = process.env.MNEMONIC;
-if (!mnemonic) {
-  throw new Error("Please set your MNEMONIC in a .env file");
-}
+// const mnemonic: string | undefined | HardhatNetworkAccountUserConfig =
+//   process.env.MNEMONIC;
+// if (!mnemonic) {
+//   throw new Error("Please set your MNEMONIC in a .env file");
+// }
 
 const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
 if (!infuraApiKey) {
@@ -66,12 +67,12 @@ const config: HardhatUserConfig = {
     src: "./contracts",
   },
   networks: {
-    hardhat: {
-      accounts: {
-        mnemonic,
-      },
-      chainId: chainIds.hardhat,
-    },
+    // hardhat: {
+    //   accounts: {
+    //     mnemonic,
+    //   },
+    //   chainId: chainIds.hardhat,
+    // },
 
     goerli: createTestnetConfig("goerli"),
     kovan: createTestnetConfig("kovan"),
