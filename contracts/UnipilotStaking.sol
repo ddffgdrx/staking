@@ -488,7 +488,7 @@ contract UnipilotStaking {
             // if (userInfo[_to].lastUpdateRewardToken != 0) {
             userInfo[_to].rewardDebt = 0;
             // }
-            userInfo[_to].lastUpdateRewardToken = block.timestamp;
+            userInfo[_to].lastUpdateRewardToken = lastUpdateRewardToken;
         }
     }
 
