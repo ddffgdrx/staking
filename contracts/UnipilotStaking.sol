@@ -17,6 +17,7 @@ error NoStakeFound();
 error PilotAddressInput();
 error RewardDistributionPeriodHasExpired();
 error RewardPerBlockIsNotSet();
+error SameRewardToken();
 error ZeroAddress();
 error ZeroInput();
 
@@ -157,6 +158,7 @@ contract UnipilotStaking {
         external
         onlyGovernance
     {
+        if (_newRewardToken == address(rewardToken)) revert SameRewardToken();
         if (_newRewardToken == address(0)) revert ZeroAddress();
 
         // Resetting reward distribution accounting
@@ -225,7 +227,9 @@ contract UnipilotStaking {
     {
         // Update reward distribution accounting
         _updateRewardPerPilotAndLastBlock();
+        lastUpdateBlock = block.number;
 
+        // Setting rewards expiration block
         periodEndBlock = block.number + _expireDurationInBlocks;
     }
 
