@@ -35,7 +35,7 @@ export async function shouldBehaveLikeViewRewards(): Promise<void> {
     await WETH.mint(wallet.address, parseUnits("2000000", "18"));
 
     await WETH.transfer(staking.address, HUNDRED);
-    await staking.updateRewards(100, 100);
+    await staking.updateRewards(HUNDRED, 100);
     // console.log(await ethers.provider.getBlockNumber())
 
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));

@@ -38,7 +38,7 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
     await SECONDARY_TOKEN.mint(wallet.address, parseUnits("2000000", "18"));
 
     await WETH.transfer(staking.address, HUNDRED);
-    await staking.updateRewards(100, 100);
+    await staking.updateRewards(HUNDRED, 100);
     // console.log("start b#", await ethers.provider.getBlockNumber());
 
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
@@ -89,7 +89,7 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
       //rewardPeriod ended here
       await staking.updateRewardEndBlock(0);
       let tokenUpdate = await staking.updateRewardToken(SECONDARY_TOKEN.address);
-      await staking.updateRewards(100, 100);
+      await staking.updateRewards(HUNDRED, 100);
 
       await mineNBlocks(8); //mining only 8 blocks bcz 2 blocks were mined during the above tx
       await ethers.provider.send("evm_setAutomine", [false]);
@@ -124,7 +124,7 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
       await SECONDARY_TOKEN.transfer(staking.address, HUNDRED);
       await staking.updateRewardEndBlock(0);
       await staking.updateRewardToken(SECONDARY_TOKEN.address);
-      await staking.updateRewards(100, 100);
+      await staking.updateRewards(HUNDRED, 100);
       await mineNBlocks(8); //mining only 8 blocks bcz 2 blocks were mined during the above tx
       let aliceStake = await staking.stake(alice.address, ONE);
       expectEventForAll(staking, aliceStake, alice, ONE, 0, TX_TYPE.STAKE);

@@ -14,6 +14,8 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
   let pilot: TestERC20;
   let WETH: TestERC20;
 
+  let HUNDRED = parseUnits("100", "18");
+
   const [wallet, alice, bob, carol] = waffle.provider.getWallets();
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
@@ -31,7 +33,7 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
     await WETH.mint(wallet.address, parseUnits("2000000", "18"));
 
     await WETH.transfer(staking.address, parseUnits("100", "18")); // 100 WETH
-    await staking.updateRewards(100, "3000"); // 100 WETH
+    await staking.updateRewards(HUNDRED, "3000"); // 100 WETH
 
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
     await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
@@ -83,7 +85,7 @@ export async function shouldBehaveLikeClaim(): Promise<void> {
       let HundredWETH = parseUnits("100", "18");
 
       await WETH.connect(wallet).transfer(staking.address, 100); // 100 WETH
-      await staking.updateRewards(100, "3");
+      await staking.updateRewards(HUNDRED, "3");
       let stake1 = await staking.stake(alice.address, HundredWETH);
       expectEventForAll(staking, stake1, alice, HundredWETH, "0", TX_TYPE.STAKE);
 

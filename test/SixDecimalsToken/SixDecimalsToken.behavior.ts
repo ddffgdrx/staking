@@ -25,7 +25,8 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
     //changing reward token to 6 deicmals token
     await SIX_DECIMALS.transfer(staking.address, HUNDRED);
     await staking.updateRewardToken(SIX_DECIMALS.address);
-    await staking.updateRewards(100, 100); //1 token / block
+    //always pass value of rewards in wei notation, regardless of token decimals
+    await staking.updateRewards(parseUnits("100", "18"), 100); //1 token / block
   };
 
   const [wallet, alice, bob, carol, newWallet] = waffle.provider.getWallets();
@@ -46,7 +47,8 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
 
     // 1 token per block
     await WETH.transfer(staking.address, HUNDRED);
-    await staking.updateRewards(100, 100);
+    //always pass value of rewards in wei notation, regardless of token decimals
+    await staking.updateRewards(parseUnits("100", "18"), 100);
     console.log("period set @:", await ethers.provider.getBlockNumber());
 
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
@@ -73,7 +75,7 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
     });
 
     it("should let reward token to shift to 6 decimals where pending should be correct", async () => {
-      let aliceStake = await staking.stake(alice.address, TEN);
+      let aliceStake = await staking.connect(alice).stake(alice.address, TEN);
       //block at which user 1 staked 10 tokens
       let currentBlock = await ethers.provider.getBlockNumber();
       console.log("rew/block:", await staking.currentRewardPerBlock());
@@ -89,22 +91,23 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
       expect(user1Pendings).to.eq(parseUnits(jumedBlocks.toString(), "18"));
 
       await updateTokenWithUpdateRewards();
-
+      // await staking.stake(wallet.address, 1)
       //jumping to 40 blocks to see pendings
       let miningPeriod = 40;
       await mineNBlocks(miningPeriod);
       let user1PendingsAt6Decimals = await staking.calculatePendingRewards(alice.address);
+
       expect(user1PendingsAt6Decimals).to.eq(parseUnits(miningPeriod.toString(), "6"));
     });
-    // NOTICE: having some issues with alice claim, not sure why, for time being, ignoring this
+
     it("should change token to 6 decimals and stake and claim for multiple users", async () => {
       console.log("periodEnd", +(await staking.periodEndBlock()));
       await ethers.provider.send("evm_setAutomine", [false]);
 
       console.log("currentBlock", await ethers.provider.getBlockNumber());
-      await staking.stake(alice.address, HUNDRED);
-      await staking.stake(bob.address, HUNDRED);
-      await staking.stake(carol.address, HUNDRED);
+      await staking.connect(alice).stake(alice.address, HUNDRED);
+      await staking.connect(bob).stake(bob.address, HUNDRED);
+      await staking.connect(carol).stake(carol.address, HUNDRED);
 
       await ethers.provider.send("evm_setAutomine", [true]);
 
@@ -113,9 +116,6 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
       //token change with updateRewards and funds transfer
       // 1 token / block
       await updateTokenWithUpdateRewards();
-      console.log("rew/b", await staking.currentRewardPerBlock());
-      console.log("currentBlock after stake", await ethers.provider.getBlockNumber());
-      console.log("newPeriodEnd", +(await staking.periodEndBlock()));
       await ethers.provider.send("evm_setAutomine", [false]);
 
       //having some issues with alice claim, not sure why, for the time being, ignoring this

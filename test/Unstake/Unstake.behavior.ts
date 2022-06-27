@@ -15,6 +15,10 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
   let pilot: TestERC20;
   let WETH: TestERC20;
 
+  let ONE = parseUnits("1", "18");
+  let TEN = parseUnits("10", "18");
+  let HUNDRED = parseUnits("100", "18");
+
   const [wallet, alice, bob, carol] = waffle.provider.getWallets();
 
   let loadFixture: ReturnType<typeof createFixtureLoader>;
@@ -52,7 +56,7 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
   });
   beforeEach("fixtures", async () => {
     await WETH.transfer(staking.address, parseUnits("100", "18"));
-    await staking.updateRewards(100, 3000);
+    await staking.updateRewards(HUNDRED, 3000);
     await staking.stake(wallet.address, parseUnits("1", "18"));
   });
   describe("#Unstake", () => {
@@ -92,12 +96,12 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
       //1st update
       await mineNBlocks(30);
       await WETH.transfer(staking.address, HundredWETH);
-      await staking.updateRewards(100, "1000");
+      await staking.updateRewards(HUNDRED, "1000");
 
       //2nd update
       await mineNBlocks(30);
       await WETH.transfer(staking.address, HundredWETH);
-      await staking.updateRewards(100, "1000");
+      await staking.updateRewards(HUNDRED, "1000");
 
       //unstake
       await mineNBlocks(30);

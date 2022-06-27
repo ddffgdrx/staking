@@ -6,6 +6,7 @@ import { shouldBehaveLikeGovernance } from "./Governance/Governance.behavior";
 import { shouldBehaveLikeClaim } from "./Claim/Claim.behavior";
 import { shouldBehaveLikeViewRewards } from "./ViewReward/ViewReward.behavior";
 import { shouldBehaveLikeSixDecimalsToken } from "./SixDecimalsToken/SixDecimalsToken.behavior";
+import { shouldBehaveLikeDecimalInput } from "./DecimalInput/DecimalInput.behavior";
 
 use(solidity);
 
@@ -14,7 +15,7 @@ use(solidity);
 //due to which events emission is skipped
 //so it would be better to run one task at a time
 describe("Invokes Stake", async () => {
-  await shouldBehaveLikeStake();
+  // await shouldBehaveLikeStake();
 });
 
 describe("Invokes Claim", async () => {
@@ -30,9 +31,13 @@ describe("Invokes Governance", async () => {
 });
 
 describe("Invokes View Reward", async () => {
-  // await shouldBehaveLikeViewRewards();
+  await shouldBehaveLikeViewRewards();
 });
 
 describe("Invokes Six Decimals Tokens", async () => {
   // await shouldBehaveLikeSixDecimalsToken();
+});
+
+describe("Invokes Six Decimals Tokens", async () => {
+  // await shouldBehaveLikeDecimalInput();
 });
