@@ -7,6 +7,7 @@ import { shouldBehaveLikeClaim } from "./Claim/Claim.behavior";
 import { shouldBehaveLikeViewRewards } from "./ViewReward/ViewReward.behavior";
 import { shouldBehaveLikeSixDecimalsToken } from "./SixDecimalsToken/SixDecimalsToken.behavior";
 import { shouldBehaveLikeDecimalInput } from "./DecimalInput/DecimalInput.behavior";
+import { delay } from "./common.setup";
 
 use(solidity);
 
@@ -14,30 +15,31 @@ use(solidity);
 //there is some issue in hardhat local env. of network skewness.
 //due to which events emission is skipped
 //so it would be better to run one task at a time
-describe("Invokes Stake", async () => {
-  // await shouldBehaveLikeStake();
-});
 
-describe("Invokes Claim", async () => {
-  // await shouldBehaveLikeClaim()
+describe("Invokes Governance", async () => {
+  await shouldBehaveLikeGovernance();
 });
 
 describe("Invokes Unstake", async () => {
-  // await shouldBehaveLikeUnstake();
+  await shouldBehaveLikeUnstake();
 });
 
-describe("Invokes Governance", async () => {
-  // await shouldBehaveLikeGovernance();
+describe("Invokes Stake", async () => {
+  await shouldBehaveLikeStake();
 });
 
 describe("Invokes View Reward", async () => {
   await shouldBehaveLikeViewRewards();
 });
 
-describe("Invokes Six Decimals Tokens", async () => {
-  // await shouldBehaveLikeSixDecimalsToken();
+describe("Invokes Six Decimals Token", async () => {
+  await shouldBehaveLikeSixDecimalsToken();
 });
 
-describe("Invokes Six Decimals Tokens", async () => {
-  // await shouldBehaveLikeDecimalInput();
+describe("Invokes Claim", async () => {
+  await shouldBehaveLikeClaim();
+});
+
+describe("Invokes Wei Input", async () => {
+  await shouldBehaveLikeDecimalInput();
 });

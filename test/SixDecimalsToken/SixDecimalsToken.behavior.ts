@@ -49,14 +49,10 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
     await WETH.transfer(staking.address, HUNDRED);
     //always pass value of rewards in wei notation, regardless of token decimals
     await staking.updateRewards(parseUnits("100", "18"), 100);
-    console.log("period set @:", await ethers.provider.getBlockNumber());
 
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
     await WETH.connect(wallet).approve(staking.address, MaxUint256);
     await SIX_DECIMALS.connect(wallet).approve(staking.address, MaxUint256);
-
-    //admin stake
-    // await staking.stake(wallet.address, ONE);
 
     //minting to users
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
@@ -78,11 +74,11 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
       let aliceStake = await staking.connect(alice).stake(alice.address, TEN);
       //block at which user 1 staked 10 tokens
       let currentBlock = await ethers.provider.getBlockNumber();
-      console.log("rew/block:", await staking.currentRewardPerBlock());
+      // console.log("rew/block:", await staking.currentRewardPerBlock());
 
       //mine blocks to reach periodEnd block
       let periodEnd = await staking.periodEndBlock();
-      console.log("period ends", +periodEnd);
+      // console.log("period ends", +periodEnd);
 
       //here reward period ended
       let jumedBlocks = +periodEnd.sub(currentBlock);
@@ -101,10 +97,10 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
     });
 
     it("should change token to 6 decimals and stake and claim for multiple users", async () => {
-      console.log("periodEnd", +(await staking.periodEndBlock()));
+      // console.log("periodEnd", +(await staking.periodEndBlock()));
       await ethers.provider.send("evm_setAutomine", [false]);
 
-      console.log("currentBlock", await ethers.provider.getBlockNumber());
+      // console.log("currentBlock", await ethers.provider.getBlockNumber());
       await staking.connect(alice).stake(alice.address, HUNDRED);
       await staking.connect(bob).stake(bob.address, HUNDRED);
       await staking.connect(carol).stake(carol.address, HUNDRED);
@@ -123,14 +119,11 @@ export async function shouldBehaveLikeSixDecimalsToken(): Promise<void> {
       let bobPending = await staking.calculatePendingRewards(bob.address);
       let carolPending = await staking.calculatePendingRewards(carol.address);
 
-      console.log("hardhat claim b#", await ethers.provider.getBlockNumber());
       let aliceActualClaim = await staking.connect(alice).claim();
       let bobActualClaim = await staking.connect(bob).claim();
       let carolActualClaim = await staking.connect(carol).claim();
 
       await ethers.provider.send("evm_setAutomine", [true]);
-      // await mineNBlocks(1);
-      console.log(+alicePending, +bobPending, +carolPending);
 
       //expecting values
       expect(alicePending).to.eq(bobPending).to.eq(carolPending);

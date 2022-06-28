@@ -39,13 +39,10 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
 
     await WETH.transfer(staking.address, HUNDRED);
     await staking.updateRewards(HUNDRED, 100);
-    // console.log("start b#", await ethers.provider.getBlockNumber());
 
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
     await WETH.connect(wallet).approve(staking.address, MaxUint256);
     await SECONDARY_TOKEN.connect(wallet).approve(staking.address, MaxUint256);
-    //admin stake
-    // await staking.stake(ONE);
 
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
     await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
@@ -131,16 +128,16 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
     });
 
     it("should run out of funds then extendPeriod will handle this", async () => {
-      console.log("reward/block:", await staking.currentRewardPerBlock());
+      // console.log("reward/block:", await staking.currentRewardPerBlock());
       let periodEnd = await staking.periodEndBlock();
-      console.log("periodEnd:", periodEnd);
+      // console.log("periodEnd:", periodEnd);
       await mineNBlocks(50);
 
       //50 blocks gone unrewarded
       await staking.stake(alice.address, TEN);
 
       let currentBlock = await staking.lastUpdateBlock();
-      console.log("stake b#", currentBlock);
+      // console.log("stake b#", currentBlock);
       let remainingBlocks: number = +periodEnd.sub(currentBlock); //109 - 69 = 40 block remains for distribution
 
       //period has been ended here
@@ -153,11 +150,11 @@ export async function shouldBehaveLikeGovernance(): Promise<void> {
       //extending undistributed period
       await staking.updateRewardEndBlock(100 - remainingBlocks);
       periodEnd = await staking.periodEndBlock();
-      console.log("current b#", await ethers.provider.getBlockNumber());
-      console.log("new periodEnd:", periodEnd);
+      // console.log("current b#", await ethers.provider.getBlockNumber());
+      // console.log("new periodEnd:", periodEnd);
       await mineNBlocks(100 - remainingBlocks);
-      console.log("jumped to b#", await ethers.provider.getBlockNumber());
-      console.log("alice pending:", await staking.calculatePendingRewards(alice.address));
+      // console.log("jumped to b#", await ethers.provider.getBlockNumber());
+      // console.log("alice pending:", await staking.calculatePendingRewards(alice.address));
       await staking.connect(alice).claim();
     });
   });

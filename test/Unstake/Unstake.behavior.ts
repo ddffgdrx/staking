@@ -33,26 +33,16 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
     await pilot.mint(wallet.address, parseUnits("2000000", "18"));
     await WETH.mint(wallet.address, parseUnits("2000000", "18"));
 
-    await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-    await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-
-    await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
-    await WETH.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
-
-    await pilot.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
-    await WETH.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
-
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
     await WETH.connect(wallet).approve(staking.address, MaxUint256);
 
+    await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
+    await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
+    await pilot.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
+
     await pilot.connect(alice).approve(staking.address, MaxUint256);
-    await WETH.connect(alice).approve(staking.address, MaxUint256);
-
     await pilot.connect(bob).approve(staking.address, MaxUint256);
-    await WETH.connect(bob).approve(staking.address, MaxUint256);
-
     await pilot.connect(carol).approve(staking.address, MaxUint256);
-    await WETH.connect(carol).approve(staking.address, MaxUint256);
   });
   beforeEach("fixtures", async () => {
     await WETH.transfer(staking.address, parseUnits("100", "18"));
@@ -75,11 +65,12 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
     // but not when running in series with stake and claim
     it("user can emergency unstake after reward duration has ended", async () => {
       let stake1 = await staking.stake(alice.address, parseUnits("10", "18"));
-      // expectEventForAll(staking, stake1, alice, parseUnits("10", "18"), "0", TX_TYPE.STAKE)
+      expectEventForAll(staking, stake1, alice, parseUnits("10", "18"), "0", TX_TYPE.STAKE);
 
       await mineNBlocks(3000);
+
       let emergencyUnstake = await staking.connect(alice).emergencyUnstake();
-      // expectEventForAll(staking, emergencyUnstake, alice, parseUnits("10", "18"), "0", TX_TYPE.EMERGENCY)
+      expectEventForAll(staking, emergencyUnstake, alice, parseUnits("10", "18"), "0", TX_TYPE.EMERGENCY);
 
       await expect(staking.connect(alice).emergencyUnstake()).to.be.revertedWith("NoStakeFound");
       await expect(staking.connect(alice).unstake(1000000000000)).to.be.revertedWith(
@@ -150,14 +141,14 @@ export async function shouldBehaveLikeUnstake(): Promise<void> {
 
       await mineNBlocks(100);
       let unstakeWithClaim = await staking.connect(alice).unstake(HUNDRED);
-      expectEventForAll(staking, unstakeWithClaim, alice, HUNDRED, "6725477777777777600", TX_TYPE.UNSTAKE);
+      let expectedReward = BigNumber.from("6725477777777777600");
+      expectEventForAll(staking, unstakeWithClaim, alice, HUNDRED, expectedReward, TX_TYPE.UNSTAKE);
 
       let contractPilotBalanceAfter = await pilot.balanceOf(staking.address);
       let contractWETHBalanceAfter = await WETH.balanceOf(staking.address);
-      let expectedReward = BigNumber.from("6725477777777777600");
 
-      expect(contractWETHBalanceBefore).to.equal(contractWETHBalanceAfter.add(expectedReward));
-      expect(contractPilotBalanceBefore).to.equal(contractPilotBalanceAfter);
+      await expect(contractWETHBalanceBefore).to.equal(contractWETHBalanceAfter.add(expectedReward));
+      await expect(contractPilotBalanceBefore).to.equal(contractPilotBalanceAfter);
     });
   });
 }

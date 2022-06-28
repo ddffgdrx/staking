@@ -41,26 +41,16 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     await WETH.transfer(staking.address, HundredWETH);
     await staking.updateRewards(HUNDRED, "3000");
 
-    await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-    await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-
-    await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
-    await WETH.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
-
-    await pilot.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
-    await WETH.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
-
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
     await WETH.connect(wallet).approve(staking.address, MaxUint256);
 
+    await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
+    await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
+    await pilot.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
+
     await pilot.connect(alice).approve(staking.address, MaxUint256);
-    await WETH.connect(alice).approve(staking.address, MaxUint256);
-
     await pilot.connect(bob).approve(staking.address, MaxUint256);
-    await WETH.connect(bob).approve(staking.address, MaxUint256);
-
     await pilot.connect(carol).approve(staking.address, MaxUint256);
-    await WETH.connect(carol).approve(staking.address, MaxUint256);
   });
 
   describe("#Stake", () => {
@@ -190,7 +180,8 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     });
 
     it("changing reward token multiple times to verify user's share", async () => {
-      await mineNBlocks(3000);
+      // await mineNBlocks(3000);
+      await ethers.provider.send("hardhat_mine", ["0xBB8"]);
 
       // making alice rich now ^_^
       await WETH.transfer(alice.address, await WETH.balanceOf(wallet.address));
@@ -205,7 +196,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       let user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
       let user2PendingRewards = await staking.calculatePendingRewards(carol.address);
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await staking.claim();
       await staking.connect(carol).claim();
@@ -229,7 +220,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       expect(user2PendingRewards).to.be.eq(await testToken.balanceOf(carol.address));
       expect(user1PendingRewards).to.be.eq((await testToken.balanceOf(wallet.address)).sub(1));
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await WETH.mint(staking.address, parseUnits("500", "18"));
 
@@ -244,7 +235,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       // await staking.claim();
       // await staking.connect(carol).claim();
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await testToken.mint(staking.address, parseUnits("100", "18"));
 
@@ -256,7 +247,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
       user2PendingRewards = await staking.calculatePendingRewards(carol.address);
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await WETH.mint(staking.address, parseUnits("500", "18"));
 
@@ -271,7 +262,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       // await staking.claim();
       // await staking.connect(carol).claim();
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
     });
   });
 }

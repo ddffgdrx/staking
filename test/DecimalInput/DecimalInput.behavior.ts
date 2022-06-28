@@ -18,7 +18,6 @@ export async function shouldBehaveLikeDecimalInput(): Promise<void> {
   let HUNDRED = parseUnits("100", "18");
   let TEN = parseUnits("10", "18");
   let ONE = parseUnits("1", "18");
-  let SECONDARY_TOKEN: TestERC20;
   let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
   let loadFixture: ReturnType<typeof createFixtureLoader>;
 
@@ -26,8 +25,6 @@ export async function shouldBehaveLikeDecimalInput(): Promise<void> {
 
   before("fixtures deployer", async () => {
     loadFixture = createFixtureLoader([wallet]);
-    const secondaryReward = await ethers.getContractFactory("TestERC20");
-    SECONDARY_TOKEN = (await secondaryReward.deploy(1)) as TestERC20;
   });
   beforeEach("fixtures", async () => {
     const res = await loadFixture(stakingConfigFixture);
@@ -39,50 +36,44 @@ export async function shouldBehaveLikeDecimalInput(): Promise<void> {
     await pilot.mint(wallet.address, parseUnits("2000000", "18"));
     await WETH.mint(wallet.address, parseUnits("2000000", "18"));
     await WETH6D.mint(wallet.address, parseUnits("2000000", "18"));
-    await SECONDARY_TOKEN.mint(wallet.address, parseUnits("2000000", "18"));
 
     await WETH.transfer(staking.address, HUNDRED);
     await WETH6D.transfer(staking.address, HUNDRED);
-    // await staking.updateRewards(100, 100);
-    // console.log("start b#", await ethers.provider.getBlockNumber());
 
-    await pilot.connect(wallet).approve(staking.address, MaxUint256);
-    await WETH.connect(wallet).approve(staking.address, MaxUint256);
-    await SECONDARY_TOKEN.connect(wallet).approve(staking.address, MaxUint256);
-    //admin stake
-    // await staking.stake(ONE);
+    await pilot.approve(staking.address, MaxUint256);
+    await WETH.approve(staking.address, MaxUint256);
 
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-    await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
-    await pilot.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
-
     await pilot.connect(alice).approve(staking.address, MaxUint256);
-    await pilot.connect(bob).approve(staking.address, MaxUint256);
-    await pilot.connect(carol).approve(staking.address, MaxUint256);
   });
   describe("#RewardAndGovernance", () => {
-    xit("should return 1 eth", async () => {
-      const result = await staking.totalPilotStaked();
-      expect(result).to.equal(ONE);
-    });
-
     it("should monitor for wei input in 18 decimals token", async () => {
+      // 18 decimals token working
       await staking.updateRewards(parseUnits("0.5", "18"), 100);
-      await staking.connect(alice).stake(alice.address, TEN);
+      await expect(staking.connect(alice).stake(alice.address, TEN))
+        .to.emit(staking, "StakeOrUnstakeOrClaim")
+        .withArgs(alice.address, TEN, "0", TX_TYPE.STAKE);
       await mineNBlocks(40);
-      console.log("alice pending for 18 decimals", await staking.calculatePendingRewards(alice.address));
-      let aliceStake = await staking.connect(alice).claim();
-      expectEventForAll(staking, aliceStake, alice, TEN, "205000000000000000", TX_TYPE.CLAIM);
-    });
-    it("should monitor to for wei input in 6 decimals token", async () => {
-      await mineNBlocks(200);
+
+      let alicePendingsIn18Decimals = await staking.calculatePendingRewards(alice.address);
+      let fortyBlocksReward = parseUnits("0.5", "18").div(100).mul(40); //rewards * noOfBlocks * blocks passed
+      expect(fortyBlocksReward).to.eq(alicePendingsIn18Decimals);
+      await staking.connect(alice).emergencyUnstake();
+      await mineNBlocks(60);
+
+      // 6 decimals token working
       await staking.updateRewardToken(WETH6D.address);
       await staking.updateRewards(parseUnits("0.5", "18"), 100);
-      await staking.connect(alice).stake(alice.address, TEN);
+      await expect(staking.connect(alice).stake(alice.address, TEN))
+        .to.emit(staking, "StakeOrUnstakeOrClaim")
+        .withArgs(alice.address, TEN, "0", TX_TYPE.STAKE);
       await mineNBlocks(40);
-      console.log("alice pending for 6 decimals", await staking.calculatePendingRewards(alice.address));
-      let aliceStake = await staking.connect(alice).claim();
-      expectEventForAll(staking, aliceStake, alice, TEN, "205000", TX_TYPE.CLAIM);
+      let alicePendingsIn6Decimals = await staking.calculatePendingRewards(alice.address);
+      fortyBlocksReward = parseUnits("0.5", "18")
+        .div(100)
+        .mul(40)
+        .div(1 * 10 ** 12); // ( rewards * noOfBlocks * blocks passed) / token decimals
+      expect(fortyBlocksReward).to.eq(alicePendingsIn6Decimals);
     });
   });
 }
