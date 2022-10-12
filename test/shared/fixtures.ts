@@ -32,7 +32,7 @@ async function stakingFixture(wallet: Wallet, WETH: TestERC20, pilot: TestERC20)
   const staking = (await stakingStaking.deploy(wallet.address, WETH.address, pilot.address)) as UnipilotStaking;
 
   let arr: string[] = ["pilot:", "WETH:", "Governance:", "staking:"];
-  [pilot, WETH, wallet, staking].map((el, i) => console.log(arr[i], el.address));
+  // [pilot, WETH, wallet, staking].map((el, i) => console.log(arr[i], el.address));
 
   return { staking };
 }

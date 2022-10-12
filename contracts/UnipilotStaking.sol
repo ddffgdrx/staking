@@ -22,8 +22,8 @@ error ZeroAddress();
 error ZeroInput();
 
 /// @title Unipilot Staking
+/// @author @hammadghazi007 & @mutahhirEth
 /// @notice Contract for staking Unipilot to earn rewards
-
 contract UnipilotStaking {
     using SafeERC20 for IERC20Metadata;
 
@@ -183,9 +183,9 @@ contract UnipilotStaking {
 
     /**
      * @notice Updates the reward per block
-     * @param _reward total reward to distribute
+     * @param _reward total reward to distribute.
      * @param _rewardDurationInBlocks total number of blocks in which the '_reward' should be distributed
-     * @dev Only callable by Governance. Enter both params in decimal format
+     * @dev Only callable by Governance.
      */
     function updateRewards(uint256 _reward, uint256 _rewardDurationInBlocks)
         external
@@ -201,14 +201,12 @@ contract UnipilotStaking {
         if (block.number >= periodEndBlock) {
             if (_reward == 0) revert ZeroInput();
 
-            // Upscaling '_reward' to 18 decimals before calculating 'currentRewardPerBlock'
-            currentRewardPerBlock = (_reward * ONE) / _rewardDurationInBlocks;
+            currentRewardPerBlock = _reward / _rewardDurationInBlocks;
         }
         // Otherwise, reward distribution duration isn't expired
         else {
-            // Upscaling '_reward' to 18 decimals before calculating 'currentRewardPerBlock'
             currentRewardPerBlock =
-                ((_reward * ONE) +
+                (_reward +
                     ((periodEndBlock - block.number) * currentRewardPerBlock)) /
                 _rewardDurationInBlocks;
         }

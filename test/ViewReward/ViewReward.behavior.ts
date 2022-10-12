@@ -5,7 +5,7 @@ import { MaxUint256 } from "@ethersproject/constants";
 import { ethers, waffle } from "hardhat";
 import { UnipilotStaking } from "../../typechain/UnipilotStaking";
 import { TestERC20 } from "../../typechain/TestERC20";
-import { mineNBlocks, TX_TYPE, expectEventForAll } from "../common.setup";
+import { mineNBlocks, TX_TYPE, expectEventForAll, delay } from "../common.setup";
 
 const createFixtureLoader = waffle.createFixtureLoader;
 
@@ -35,26 +35,20 @@ export async function shouldBehaveLikeViewRewards(): Promise<void> {
     await WETH.mint(wallet.address, parseUnits("2000000", "18"));
 
     await WETH.transfer(staking.address, HUNDRED);
-    await staking.updateRewards(100, 100);
-    // console.log(await ethers.provider.getBlockNumber())
+    await staking.updateRewards(HUNDRED, 100);
 
     await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-    await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-
     await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
-    await WETH.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
 
     await pilot.connect(alice).approve(staking.address, MaxUint256);
-    await WETH.connect(alice).approve(staking.address, MaxUint256);
-
     await pilot.connect(bob).approve(staking.address, MaxUint256);
-    await WETH.connect(bob).approve(staking.address, MaxUint256);
   });
 
   describe("#RewardsLookup", () => {
     it("should view reward/block", async () => {
       const result = await staking.currentRewardPerBlock();
-      expect(result).to.equal(HUNDRED.div("100"));
+      let isTrue: boolean = HUNDRED.div("100").eq(result) ? true : false;
+      await expect(isTrue).to.be.true;
     });
 
     it("should stake 10 tokens and after 10 blocks, see rewards", async () => {
@@ -92,20 +86,6 @@ export async function shouldBehaveLikeViewRewards(): Promise<void> {
       expectEventForAll(staking, aliceClaim, alice, TEN, TEN.add(ONE), TX_TYPE.CLAIM);
       // console.log("alice view reward", aliceVieww.toString());
       expect(aliceVieww).to.equal(0);
-    });
-
-    //NOTICE: this test is not working, it's a bug in the automine,
-    //it doesn't revert the pending transactions after confirmation,
-    //this has been tested via smart contract, txHash: 0x54cf013ad8124fc01f8853ba92813b7d8369b2816ad787f912a0225bd8fbfc49 (rinkeby testnet)
-    it("should prevent double claim", async () => {
-      let aliceStake = await staking.connect(alice).stake(alice.address, TEN);
-      await ethers.provider.send("evm_setAutomine", [false]);
-      let claim1 = await staking.connect(alice).claim();
-      let claim2 = await staking.connect(alice).claim();
-      await ethers.provider.send("evm_setAutomine", [true]);
-      await mineNBlocks(1);
-      expectEventForAll(staking, claim1, alice, TEN, ONE, TX_TYPE.CLAIM);
-      // expectEventForAll(staking, claim1, alice, TEN, ONE, TX_TYPE.CLAIM)
     });
   });
 }

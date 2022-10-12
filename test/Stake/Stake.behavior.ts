@@ -14,6 +14,9 @@ export async function shouldBehaveLikeStake(): Promise<void> {
   let pilot: TestERC20;
   let WETH: TestERC20;
   let testToken: TestERC20;
+  let ONE = parseUnits("1", "18");
+  let TEN = parseUnits("10", "18");
+  let HUNDRED = parseUnits("100", "18");
 
   const [wallet, alice, bob, carol] = waffle.provider.getWallets();
 
@@ -36,28 +39,18 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     await WETH.connect(wallet).mint(wallet.address, parseUnits("2000000", "18"));
 
     await WETH.transfer(staking.address, HundredWETH);
-    await staking.updateRewards(100, "3000");
-
-    await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-    await WETH.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
-
-    await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
-    await WETH.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
-
-    await pilot.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
-    await WETH.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
+    await staking.updateRewards(HUNDRED, "3000");
 
     await pilot.connect(wallet).approve(staking.address, MaxUint256);
     await WETH.connect(wallet).approve(staking.address, MaxUint256);
 
+    await pilot.connect(alice).mint(alice.address, parseUnits("2000000", "18"));
+    await pilot.connect(bob).mint(bob.address, parseUnits("2000000", "18"));
+    await pilot.connect(carol).mint(carol.address, parseUnits("2000000", "18"));
+
     await pilot.connect(alice).approve(staking.address, MaxUint256);
-    await WETH.connect(alice).approve(staking.address, MaxUint256);
-
     await pilot.connect(bob).approve(staking.address, MaxUint256);
-    await WETH.connect(bob).approve(staking.address, MaxUint256);
-
     await pilot.connect(carol).approve(staking.address, MaxUint256);
-    await WETH.connect(carol).approve(staking.address, MaxUint256);
   });
 
   describe("#Stake", () => {
@@ -102,7 +95,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     it("should not stake after rewardDistribution end", async () => {
       let HundredWETH = parseUnits("100", "18");
       // await WETH.connect(wallet).transfer(staking.address, HundredWETH);
-      // await staking.connect(wallet).updateRewards(100, "3");
+      // await staking.connect(wallet).updateRewards(HUNDRED, "3");
       await mineNBlocks(4000);
       await expect(staking.stake(alice.address, HundredWETH)).to.be.revertedWith("RewardDistributionPeriodHasExpired");
     });
@@ -114,7 +107,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
 
       await ethers.provider.send("evm_setAutomine", [false]);
 
-      await staking.updateRewards(30, 30);
+      await staking.updateRewards(parseUnits("30", "18"), 30);
       await staking.stake(wallet.address, parseUnits("100", "18"));
 
       await ethers.provider.send("evm_setAutomine", [true]);
@@ -187,13 +180,14 @@ export async function shouldBehaveLikeStake(): Promise<void> {
     });
 
     it("changing reward token multiple times to verify user's share", async () => {
-      await mineNBlocks(3000);
+      // await mineNBlocks(3000);
+      await ethers.provider.send("hardhat_mine", ["0xBB8"]);
 
       // making alice rich now ^_^
       await WETH.transfer(alice.address, await WETH.balanceOf(wallet.address));
       await WETH.connect(carol).transfer(alice.address, await WETH.balanceOf(carol.address));
 
-      await staking.updateRewards(100, 100);
+      await staking.updateRewards(HUNDRED, 100);
       await staking.stake(wallet.address, parseUnits("600", "18"));
       await staking.connect(carol).stake(carol.address, parseUnits("600", "18"));
 
@@ -202,7 +196,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       let user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
       let user2PendingRewards = await staking.calculatePendingRewards(carol.address);
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await staking.claim();
       await staking.connect(carol).claim();
@@ -213,7 +207,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       await testToken.mint(staking.address, parseUnits("100", "18"));
 
       await staking.updateRewardToken(testToken.address);
-      await staking.updateRewards(100, 100);
+      await staking.updateRewards(HUNDRED, 100);
 
       await mineNBlocks(100);
 
@@ -226,12 +220,12 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       expect(user2PendingRewards).to.be.eq(await testToken.balanceOf(carol.address));
       expect(user1PendingRewards).to.be.eq((await testToken.balanceOf(wallet.address)).sub(1));
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await WETH.mint(staking.address, parseUnits("500", "18"));
 
       await staking.updateRewardToken(WETH.address);
-      await staking.updateRewards(500, 100);
+      await staking.updateRewards(HUNDRED.mul(5), 100);
 
       await mineNBlocks(100);
 
@@ -241,24 +235,24 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       // await staking.claim();
       // await staking.connect(carol).claim();
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await testToken.mint(staking.address, parseUnits("100", "18"));
 
       await staking.updateRewardToken(testToken.address);
-      await staking.updateRewards(100, 100);
+      await staking.updateRewards(HUNDRED, 100);
 
       await mineNBlocks(100);
 
       user1PendingRewards = await staking.calculatePendingRewards(wallet.address);
       user2PendingRewards = await staking.calculatePendingRewards(carol.address);
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
 
       await WETH.mint(staking.address, parseUnits("500", "18"));
 
       await staking.updateRewardToken(WETH.address);
-      await staking.updateRewards(100, 100);
+      await staking.updateRewards(HUNDRED, 100);
 
       await mineNBlocks(100);
 
@@ -268,7 +262,7 @@ export async function shouldBehaveLikeStake(): Promise<void> {
       // await staking.claim();
       // await staking.connect(carol).claim();
 
-      console.log("usr1,2", user1PendingRewards, user2PendingRewards);
+      // console.log("usr1,2", user1PendingRewards, user2PendingRewards);
     });
   });
 }
