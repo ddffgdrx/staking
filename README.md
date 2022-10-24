@@ -1,46 +1,59 @@
-# Advanced Sample Hardhat Project
+# Unipilot Staking
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+This repository contains Unipilot staking smart contract.
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
+## UnipilotStaking.sol
+`UnipilotStaking.sol` allows unipilot holders to stake (`stake()`) unipilot tokens to receive rewards (reward token could be WETH or any other ERC-20 token). Staker can claim rewards (`claim()`). Stakers may unstake their unipilot tokens by calling `unstake()`, which will trigger the reward claim as well. For emergency unstake, stakers can call `emergencyUnstake()`, beaware that emergency unstake doesn't trigger reward claim and all your pending reward tokens are lost.
 
-Try running some of the following tasks:
+## Local deployment
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
-npx eslint '**/*.{js,ts}'
-npx eslint '**/*.{js,ts}' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
+### Pre Requisite
+
+After cloning the repository, make sure to install dependencies:
+
+```
+$ yarn install
 ```
 
-# Etherscan verification
+### Compile
 
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
+Compile the smart contracts with Hardhat:
 
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network ropsten scripts/deploy.ts
+```
+$ yarn compile
 ```
 
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
 
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
+Set the environment variables.
+For example:
+
+```
+INFURA_API_KEY="Your infura API key"
+PK1="Your private key"
+ETHERSCAN_API_KEY="Your etherscan API key"
 ```
 
-# Performance optimizations
+Execute the tasks in the following order with correct params to deploy unipilot staking contract and to verify it.
 
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
+```
+1. deploy-unipilot-setup
+2. deploy-unipilot-staking
+3. setup-staking-contract
+4. verify-unipilot-staking
+```
+
+## Test cases
+
+To run the test cases:
+```
+$ yarn test
+```
+
+## Security
+
+Audit was performed by [Block Apex](https://blockapex.io/unipilot-staking-audit-report/)
+
+## Licensing
+
+Unipilot staking contract is licensed under the [MIT License](https://opensource.org/licenses/MIT)
+
