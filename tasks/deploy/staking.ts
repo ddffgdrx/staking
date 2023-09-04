@@ -29,20 +29,20 @@ task("deploy-unipilot-setup", "Deploy Unipilot Staking Setup Contract")
     console.log("Task Args");
     console.log(args);
 
-    const unipilotStakingSetup = await deployContract(
-      "UnipilotStakingSetup",
-      await ethers.getContractFactory("UnipilotStakingSetup"),
+    const unixprotocolStakingSetup = await deployContract(
+      "UnixprotocolStakingSetup",
+      await ethers.getContractFactory("UnixprotocolStakingSetup"),
       signer,
       [args.pilotToken]
     );
 
-    await unipilotStakingSetup.deployTransaction.wait(5);
+    await unixprotocolStakingSetup.deployTransaction.wait(5);
     delay(60000);
 
     console.log("Verifying Smart Contract ...");
 
     await run("verify:verify", {
-      address: unipilotStakingSetup.address,
+      address: unixprotocolStakingSetup.address,
       constructorArguments: [args.pilotToken],
     });
   });
@@ -72,8 +72,8 @@ task("deploy-unipilot-staking", "Deploy Unipilot Staking Contract")
     console.log(args);
 
     const unipilotStaking = await deployContract(
-      "UnipilotStaking",
-      await ethers.getContractFactory("UnipilotStaking"),
+      "UnixprotocolStaking",
+      await ethers.getContractFactory("UnixprotocolStaking"),
       signer,
       [args.governance, args.rewardToken, args.pilotToken]
     );
@@ -113,7 +113,7 @@ task("setup-staking-contract", "Setup unipilot staking contract")
     console.log(cliArgs);
 
     let stakingSetup = await ethers.getContractAt(
-      "UnipilotStakingSetup",
+      "UnixprotocolStakingSetup",
       setupContract,
       signer
     );
