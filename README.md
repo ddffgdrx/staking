@@ -49,10 +49,6 @@ To run the test cases:
 $ yarn test
 ```
 
-## Security
-
-Audit was performed by [Block Apex](https://blockapex.io/unixprotocol-staking-audit-report/)
-
 ## Licensing
 
 Unixprotocol staking contract is licensed under the [MIT License](https://opensource.org/licenses/MIT)
